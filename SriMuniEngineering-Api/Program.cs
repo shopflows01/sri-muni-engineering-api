@@ -6,8 +6,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QuestPDF.Infrastructure;
 using SriMuniEngineering_Api.Features.Auth;
+using SriMuniEngineering_Api.Features.Customers;
 using SriMuniEngineering_Api.Features.Dashboard;
 using SriMuniEngineering_Api.Features.EWayBill;
+using SriMuniEngineering_Api.Features.Products;
 using SriMuniEngineering_Api.Features.InspectionReports;
 using SriMuniEngineering_Api.Features.Invoices;
 using SriMuniEngineering_Api.Features.Quotations;
@@ -74,6 +76,8 @@ builder.Services.AddSingleton<TokenBlacklistService>();
 
 // ─── Feature Services ─────────────────────────────────────────────
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<StockService>();
 builder.Services.AddScoped<QuotationService>();

@@ -192,7 +192,7 @@ public class AppDbContext : DbContext
         {
             Id = adminId,
             Username = "admin",
-            PasswordHash = "$2a$11$Gf7VU1F6CVPjE7LUrGEA4OJx3b2ZkXJtTCpYMZPf7vF6QI0sN5gXy",
+            PasswordHash = "$2a$11$4EZ9QdbSPoWe65XQAA2kLuWSWdXbs1ZbHQ4A3O8iv3Se6ogLgMOBW",
             Role = "Admin",
             Email = "admin@srimuni.com",
             IsActive = true,

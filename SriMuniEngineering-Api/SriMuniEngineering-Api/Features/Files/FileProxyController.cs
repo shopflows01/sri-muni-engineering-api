@@ -92,4 +92,21 @@ public class FileProxyController : ControllerBase
             return StatusCode(502, new { message = "Failed to retrieve file from storage.", detail = ex.Message });
         }
     }
+
+    [HttpGet("report/{fileName}")]
+    public async Task<IActionResult> DownloadReport(string fileName)
+    {
+        var decodedName = Uri.UnescapeDataString(fileName);
+        var filePath = $"sri-muni-engineering/reports/{decodedName}";
+
+        try
+        {
+            var bytes = await _storageService.DownloadFileAsync(filePath);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", decodedName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(502, new { message = "Failed to retrieve file from storage.", detail = ex.Message });
+        }
+    }
 }

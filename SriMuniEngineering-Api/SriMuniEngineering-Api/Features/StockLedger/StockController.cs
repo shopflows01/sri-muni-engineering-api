@@ -65,7 +65,8 @@ public class StockController : ControllerBase
     [HttpGet("export-excel")]
     public async Task<IActionResult> ExportExcel([FromQuery] StockExportQuery query)
     {
-        var downloadUrl = await _stockService.ExportToExcelAsync(query);
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var downloadUrl = await _stockService.ExportToExcelAsync(query, baseUrl);
         return Ok(new { downloadUrl });
     }
 }

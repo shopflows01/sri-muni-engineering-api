@@ -142,7 +142,7 @@ public class StockService
         };
     }
 
-    public async Task<string> ExportToExcelAsync(StockExportQuery query)
+    public async Task<string> ExportToExcelAsync(StockExportQuery query, string baseUrl)
     {
         var fromDate = query.FromDate ?? (query.Period == "weekly"
             ? DateTime.UtcNow.AddDays(-7)
@@ -197,13 +197,13 @@ public class StockService
         workbook.SaveAs(stream);
         var bytes = stream.ToArray();
 
-        // Upload to Supabase and return a signed download URL
+        // Upload to Supabase
         var fileName = $"StockReport_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
-        var storedPath = await _storageService.UploadFileAsync(
+        await _storageService.UploadFileAsync(
             "reports", fileName, bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
-        var signedUrl = await _storageService.GetSignedUrlAsync(storedPath, expiresInSeconds: 86400);
-        return signedUrl;
+        // Return clean proxy URL (no Supabase metadata exposed)
+        return $"{baseUrl}/api/files/report/{Uri.EscapeDataString(fileName)}";
     }
 
     private static LedgerResponse MapToResponse(JobWorkLedger ledger) => new()
