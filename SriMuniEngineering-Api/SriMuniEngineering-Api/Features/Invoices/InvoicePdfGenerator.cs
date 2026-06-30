@@ -14,22 +14,27 @@ public static class InvoicePdfGenerator
     {
         var document = Document.Create(container =>
         {
-            container.Page(page =>
-            {
-                page.Size(PageSizes.A4);
-                page.Margin(25);
-                page.DefaultTextStyle(x => x.FontSize(9));
+            var copies = new[] { "ORIGINAL FOR RECIPIENT", "DUPLICATE FOR TRANSPORTER", "TRIPLICATE FOR SUPPLIER" };
 
-                page.Header().Element(header => ComposeHeader(header));
-                page.Content().Element(content => ComposeContent(content, invoice, companyProfile));
-                page.Footer().AlignCenter().Text("SUBJECT TO HOSUR JURISDICTION").FontSize(8).Bold();
-            });
+            foreach (var copyLabel in copies)
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(25);
+                    page.DefaultTextStyle(x => x.FontSize(9));
+
+                    page.Header().Element(header => ComposeHeader(header, copyLabel));
+                    page.Content().Element(content => ComposeContent(content, invoice, companyProfile));
+                    page.Footer().AlignCenter().Text("SUBJECT TO HOSUR JURISDICTION").FontSize(8).Bold();
+                });
+            }
         });
 
         return document.GeneratePdf();
     }
 
-    private static void ComposeHeader(IContainer container)
+    private static void ComposeHeader(IContainer container, string copyLabel)
     {
         container.Column(col =>
         {
@@ -44,7 +49,7 @@ public static class InvoicePdfGenerator
                 row.RelativeItem().AlignCenter().Column(c =>
                 {
                     c.Item().AlignCenter().Text("TAX INVOICE").Bold().FontSize(14);
-                    c.Item().AlignCenter().Text("(ORIGINAL FOR RECIPIENT)").FontSize(8).Italic();
+                    c.Item().AlignCenter().Text($"({copyLabel})").FontSize(8).Italic();
                 });
 
                 // Spacer to balance the logo width
@@ -89,48 +94,13 @@ public static class InvoicePdfGenerator
                     });
                     col.Item().Row(r =>
                     {
-                        r.RelativeItem().Text("Delivery Note").FontSize(8);
-                        r.RelativeItem().Text(invoice.DeliveryNoteNo ?? "").FontSize(8);
+                        r.RelativeItem().Text("E-Way Bill No.").FontSize(8);
+                        r.RelativeItem().Text(invoice.EwbNo ?? "").FontSize(8);
                     });
                     col.Item().Row(r =>
                     {
-                        r.RelativeItem().Text("Mode/Terms of Payment").FontSize(8);
-                        r.RelativeItem().Text("").FontSize(8);
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("Reference No. & Date").FontSize(8);
-                        r.RelativeItem().Text(invoice.ReferenceNo ?? "").FontSize(8);
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("Other References").FontSize(8);
-                        r.RelativeItem().Text("").FontSize(8);
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("Buyer's Order No.").FontSize(8);
-                        r.RelativeItem().Text(invoice.BuyersOrderNo ?? "").FontSize(8);
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("Dispatch Doc No.").FontSize(8);
-                        r.RelativeItem().Text(invoice.DispatchDocNo ?? "").FontSize(8);
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("Dispatched through").FontSize(8);
-                        r.RelativeItem().Text(invoice.TransportDetails ?? "").FontSize(8);
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("Destination").FontSize(8);
-                        r.RelativeItem().Text(invoice.Destination ?? "").FontSize(8);
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.RelativeItem().Text("Terms of Delivery").FontSize(8);
-                        r.RelativeItem().Text(invoice.TermsOfDelivery ?? "").FontSize(8);
+                        r.RelativeItem().Text("ASN No.").FontSize(8);
+                        r.RelativeItem().Text(invoice.AsnNo ?? "").FontSize(8);
                     });
                 });
             });
@@ -145,11 +115,7 @@ public static class InvoicePdfGenerator
                 col.Item().Text($"State Name: {invoice.Customer.StateName}, Code: {invoice.Customer.StateCode}").FontSize(8);
             });
 
-            // ASN Number (if present)
-            if (!string.IsNullOrWhiteSpace(invoice.AsnNo))
-            {
-                column.Item().PaddingTop(3).Text($"ASN # {invoice.AsnNo}").Bold().FontSize(9);
-            }
+            // (Standalone ASN block removed, moved to header)
 
             // Items Table
             column.Item().PaddingTop(5).Table(table =>
@@ -275,7 +241,7 @@ public static class InvoicePdfGenerator
             column.Item().PaddingTop(3).Text($"Tax Amount (in words): {invoice.AmountInWords}").FontSize(8).Italic();
 
             // Bank Details & Declaration
-            column.Item().PaddingTop(10).Row(row =>
+            column.Item().ExtendVertical().AlignBottom().PaddingTop(10).Row(row =>
             {
                 row.RelativeItem().Column(col =>
                 {

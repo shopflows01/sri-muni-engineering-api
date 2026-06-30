@@ -39,8 +39,7 @@ public class DashboardService
         var monthlyRejected = monthLedgers.Sum(l => l.RejectedQty);
 
         // ─── Pending Counts ───────────────────────────────────
-        var pendingInvoices = await _context.Invoices.CountAsync(i => !i.IsLocked);
-        var pendingQuotations = await _context.Quotations.CountAsync(q => q.StoredFilePath == null);
+        var pendingInvoices = await _context.Invoices.CountAsync(i => i.StoredFilePath == null);
         var inProgressLedgers = await _context.JobWorkLedgers.CountAsync(l => l.Status == LedgerStatus.InProgress);
 
         // ─── Totals ───────────────────────────────────────────
@@ -143,7 +142,6 @@ public class DashboardService
             MonthlyOutwardQty = monthlyOutward,
             MonthlyRejectedQty = monthlyRejected,
             PendingInvoicesCount = pendingInvoices,
-            PendingQuotationsCount = pendingQuotations,
             InProgressLedgerCount = inProgressLedgers,
             TotalCustomers = totalCustomers,
             TotalProducts = totalProducts,

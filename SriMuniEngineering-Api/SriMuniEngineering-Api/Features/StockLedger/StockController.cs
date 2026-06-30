@@ -41,6 +41,24 @@ public class StockController : ControllerBase
         }
     }
 
+    [HttpPut("rejected/{id:guid}")]
+    public async Task<IActionResult> UpdateRejected(Guid id, [FromBody] RejectedRequest request)
+    {
+        try
+        {
+            var result = await _stockService.UpdateRejectedAsync(id, request);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {

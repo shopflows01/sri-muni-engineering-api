@@ -33,24 +33,6 @@ public class InvoiceController : ControllerBase
         }
     }
 
-    [HttpPut("{id:guid}/shipping-metadata")]
-    public async Task<IActionResult> UpdateShippingMetadata(Guid id, [FromBody] Dtos.ShippingMetadataRequest request)
-    {
-        try
-        {
-            var result = await _invoiceService.UpdateShippingMetadataAsync(id, request);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -84,10 +66,6 @@ public class InvoiceController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
         }
     }
 }

@@ -69,10 +69,10 @@ public class EWayBillService
             OthValue = 0,
             TotInvValue = invoice.TotalAmount,
 
-            // Transport (from invoice metadata)
+            // Transport
             TransMode = 1,
             TransDistance = 0,
-            TransporterName = invoice.TransportDetails ?? "",
+            TransporterName = "",
             TransporterId = "",
             TransDocNo = "",
             TransDocDate = invoice.Date.ToString("dd/MM/yyyy"),

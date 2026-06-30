@@ -8,7 +8,6 @@ namespace SriMuniEngineering_Api.Features.Auth;
 
 [ApiController]
 [Route("api/auth")]
-[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
@@ -19,6 +18,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("signup")]
+    [AllowAnonymous]
     public async Task<IActionResult> Signup([FromBody] SignupRequest request)
     {
         try
@@ -33,6 +33,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         try

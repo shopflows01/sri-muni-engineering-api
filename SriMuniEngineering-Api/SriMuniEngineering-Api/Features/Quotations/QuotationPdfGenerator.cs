@@ -46,21 +46,19 @@ public static class QuotationPdfGenerator
         {
             column.Item().Row(row =>
             {
-                // Logo on the left
-                row.ConstantItem(70).AlignMiddle().Column(col =>
-                {
-                    if (File.Exists(LogoPath))
-                    {
-                        col.Item().Width(60).Image(LogoPath);
-                    }
-                });
-
+                // Left column: GSTIN, PAN, and Logo
                 row.RelativeItem().Column(col =>
                 {
                     col.Item().Text($"GSTIN : {company["Gstin"]}").FontSize(8);
                     col.Item().Text($"PAN : {company["Pan"]}").FontSize(8);
+                    
+                    if (File.Exists(LogoPath))
+                    {
+                        col.Item().PaddingTop(5).Width(60).Image(LogoPath);
+                    }
                 });
 
+                // Center column: Company Name and Address (Perfectly centered)
                 row.RelativeItem(2).AlignCenter().Column(col =>
                 {
                     col.Item().AlignCenter().Text(company["Name"]!).Bold().FontSize(14);
@@ -70,6 +68,7 @@ public static class QuotationPdfGenerator
                     col.Item().AlignCenter().Text($"Email: {company["Email"]}").FontSize(8);
                 });
 
+                // Right column: Contact details
                 row.RelativeItem().AlignRight().Column(col =>
                 {
                     col.Item().AlignRight().Text($"Mobile: {company["Phone"]}").FontSize(8);
@@ -97,7 +96,7 @@ public static class QuotationPdfGenerator
                 });
                 row.RelativeItem().Border(1).Padding(5).Column(col =>
                 {
-                    col.Item().Text($"Date: {quotation.Date:dd-M-yyyy}").FontSize(9);
+                    col.Item().Text($"Date: ").FontSize(9);
                 });
             });
 

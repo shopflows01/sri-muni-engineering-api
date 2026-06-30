@@ -11,7 +11,6 @@ public class InvoiceFilterRequest : PaginatedRequest
     public string? PartNo { get; set; }
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
-    public bool? IsLocked { get; set; }
     public decimal? MinAmount { get; set; }
     public decimal? MaxAmount { get; set; }
 }

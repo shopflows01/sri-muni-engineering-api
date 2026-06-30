@@ -128,7 +128,6 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Destination).HasMaxLength(200);
             entity.Property(e => e.TermsOfDelivery).HasMaxLength(200);
             entity.Property(e => e.AsnNo).HasMaxLength(100);
-            entity.Property(e => e.TransportDetails).HasMaxLength(500);
             entity.Property(e => e.EwbNo).HasMaxLength(100);
             entity.Property(e => e.StoredFilePath).HasMaxLength(500);
 

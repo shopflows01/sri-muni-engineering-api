@@ -26,9 +26,7 @@ public class Invoice
     public string? Destination { get; set; }
     public string? TermsOfDelivery { get; set; }
     public string? AsnNo { get; set; }
-    public string? TransportDetails { get; set; }
     public string? EwbNo { get; set; }
-    public bool IsLocked { get; set; }
     public string? StoredFilePath { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

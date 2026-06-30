@@ -63,6 +63,26 @@ public class StockService
         return await GetByIdAsync(ledger.Id);
     }
 
+    public async Task<LedgerResponse> UpdateRejectedAsync(Guid id, RejectedRequest request)
+    {
+        var ledger = await _context.JobWorkLedgers.FindAsync(id)
+            ?? throw new KeyNotFoundException($"Ledger entry with ID {id} not found.");
+
+        if (ledger.Status == LedgerStatus.Invoiced)
+            throw new InvalidOperationException("Cannot modify an invoiced ledger entry.");
+
+        if (ledger.OutwardQty + request.RejectedQty != ledger.InwardQty)
+            throw new InvalidOperationException(
+                $"OutwardQty ({ledger.OutwardQty}) + RejectedQty ({request.RejectedQty}) must equal InwardQty ({ledger.InwardQty}).");
+
+        ledger.RejectedQty = request.RejectedQty;
+        ledger.Status = LedgerStatus.ReadyForInvoice;
+
+        await _context.SaveChangesAsync();
+
+        return await GetByIdAsync(ledger.Id);
+    }
+
     public async Task<LedgerResponse> GetByIdAsync(Guid id)
     {
         var ledger = await _context.JobWorkLedgers

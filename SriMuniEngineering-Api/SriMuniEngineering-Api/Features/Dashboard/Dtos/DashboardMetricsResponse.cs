@@ -14,7 +14,6 @@ public class DashboardMetricsResponse
 
     // ─── Pending Counts ───────────────────────────────────────
     public int PendingInvoicesCount { get; set; }
-    public int PendingQuotationsCount { get; set; }
     public int InProgressLedgerCount { get; set; }
 
     // ─── Totals ───────────────────────────────────────────────

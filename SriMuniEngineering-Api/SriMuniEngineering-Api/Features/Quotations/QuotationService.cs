@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SriMuniEngineering_Api.Common;
 using SriMuniEngineering_Api.Domain.Entities;
@@ -123,7 +124,10 @@ public class QuotationService
         };
     }
 
-    public async Task<string> GeneratePdfAsync(Guid id, string baseUrl)
+    /// <summary>
+    /// Returns the download URL for the quotation's PDF. If not present (or if regenerate is true), generates and uploads it.
+    /// </summary>
+    public async Task<string> GetPdfUrlAsync(Guid id, string baseUrl, bool regenerate = false)
     {
         var quotation = await _context.Quotations
             .Include(q => q.Customer)
@@ -131,12 +135,20 @@ public class QuotationService
             .FirstOrDefaultAsync(q => q.Id == id)
             ?? throw new KeyNotFoundException($"Quotation with ID {id} not found.");
 
+        if (!regenerate && !string.IsNullOrEmpty(quotation.StoredFilePath))
+        {
+            return $"/api/files/quotation/{Uri.EscapeDataString(quotation.QuotationNo)}.pdf";
+        }
+
+        // Generate the PDF since it doesn't exist yet
         var companyProfile = _configuration.GetSection("CompanyProfile");
         var pdfBytes = QuotationPdfGenerator.Generate(quotation, companyProfile);
 
+        // Upload to Supabase
         var fileName = $"{quotation.QuotationNo.Replace("/", "-")}.pdf";
         var storedPath = await _storageService.UploadFileAsync("quotations", fileName, pdfBytes, "application/pdf");
 
+        // Update DB
         quotation.StoredFilePath = storedPath;
         await _context.SaveChangesAsync();
 

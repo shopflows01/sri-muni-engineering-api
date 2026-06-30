@@ -36,4 +36,6 @@ public class CreateInvoiceRequest
     public string? DispatchDocNo { get; set; }
     public string? Destination { get; set; }
     public string? TermsOfDelivery { get; set; }
+    public string? AsnNo { get; set; }
+    public string? EwbNo { get; set; }
 }

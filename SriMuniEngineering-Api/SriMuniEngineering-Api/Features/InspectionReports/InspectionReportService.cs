@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SriMuniEngineering_Api.Common;
 using SriMuniEngineering_Api.Domain.Entities;
@@ -138,7 +139,10 @@ public class InspectionReportService
         };
     }
 
-    public async Task<string> GeneratePdfAsync(Guid id, string baseUrl)
+    /// <summary>
+    /// Returns the download URL for the inspection report's PDF. If not present (or if regenerate is true), generates and uploads it.
+    /// </summary>
+    public async Task<string> GetPdfUrlAsync(Guid id, string baseUrl, bool regenerate = false)
     {
         var report = await _context.InspectionReports
             .Include(r => r.Customer)
@@ -147,12 +151,20 @@ public class InspectionReportService
             .FirstOrDefaultAsync(r => r.Id == id)
             ?? throw new KeyNotFoundException($"Inspection report with ID {id} not found.");
 
+        if (!regenerate && !string.IsNullOrEmpty(report.StoredFilePath))
+        {
+            return $"/api/files/inspection-report/{report.Id}.pdf";
+        }
+
+        // Generate the PDF since it doesn't exist yet
         var companyProfile = _configuration.GetSection("CompanyProfile");
         var pdfBytes = InspectionReportPdfGenerator.Generate(report, companyProfile);
 
+        // Upload to Supabase
         var fileName = $"IR-{report.Id.ToString()[..8]}.pdf";
         var storedPath = await _storageService.UploadFileAsync("inspection-reports", fileName, pdfBytes, "application/pdf");
 
+        // Update DB
         report.StoredFilePath = storedPath;
         await _context.SaveChangesAsync();
 

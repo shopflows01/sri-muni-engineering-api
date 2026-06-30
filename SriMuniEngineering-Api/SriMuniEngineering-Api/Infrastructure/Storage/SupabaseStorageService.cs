@@ -94,4 +94,18 @@ public class SupabaseStorageService
         // Prepend the base URL to form the complete downloadable link
         return $"{_baseUrl}{signedUrl}";
     }
+
+    public async Task<bool> PingAsync()
+    {
+        try
+        {
+            var url = $"storage/v1/bucket"; // List buckets just to verify auth and connection
+            var response = await _httpClient.GetAsync(url);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

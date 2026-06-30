@@ -43,13 +43,16 @@ public class InspectionReportController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Returns the download URL for an existing PDF. If not present (or if regenerate=true), generates and uploads it.
+    /// </summary>
     [HttpGet("{id:guid}/pdf")]
-    public async Task<IActionResult> GeneratePdf(Guid id)
+    public async Task<IActionResult> GetPdfUrl(Guid id, [FromQuery] bool regenerate = false)
     {
         try
         {
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var downloadUrl = await _inspectionReportService.GeneratePdfAsync(id, baseUrl);
+            var downloadUrl = await _inspectionReportService.GetPdfUrlAsync(id, baseUrl, regenerate);
             return Ok(new { downloadUrl });
         }
         catch (KeyNotFoundException ex)

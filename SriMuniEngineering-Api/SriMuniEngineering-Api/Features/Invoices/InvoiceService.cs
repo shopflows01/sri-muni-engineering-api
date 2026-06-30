@@ -60,7 +60,8 @@ public class InvoiceService
             DispatchDocNo = request.DispatchDocNo,
             Destination = request.Destination,
             TermsOfDelivery = request.TermsOfDelivery,
-            IsLocked = false,
+            AsnNo = request.AsnNo,
+            EwbNo = request.EwbNo,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -71,30 +72,6 @@ public class InvoiceService
 
         await _context.SaveChangesAsync();
 
-        return await GetByIdAsync(invoice.Id);
-    }
-
-    public async Task<InvoiceResponse> UpdateShippingMetadataAsync(Guid id, ShippingMetadataRequest request)
-    {
-        var invoice = await _context.Invoices.FindAsync(id)
-            ?? throw new KeyNotFoundException($"Invoice with ID {id} not found.");
-
-        if (invoice.IsLocked)
-            throw new InvalidOperationException("Invoice is already locked.");
-
-        invoice.AsnNo = request.AsnNo;
-        invoice.TransportDetails = request.TransportDetails;
-        invoice.EwbNo = request.EwbNo;
-
-        // Lock if all three shipping fields are populated
-        if (!string.IsNullOrWhiteSpace(invoice.AsnNo) &&
-            !string.IsNullOrWhiteSpace(invoice.TransportDetails) &&
-            !string.IsNullOrWhiteSpace(invoice.EwbNo))
-        {
-            invoice.IsLocked = true;
-        }
-
-        await _context.SaveChangesAsync();
         return await GetByIdAsync(invoice.Id);
     }
 
@@ -139,9 +116,6 @@ public class InvoiceService
         if (filter.ToDate.HasValue)
             query = query.Where(i => i.Date <= filter.ToDate.Value);
 
-        if (filter.IsLocked.HasValue)
-            query = query.Where(i => i.IsLocked == filter.IsLocked.Value);
-
         if (filter.MinAmount.HasValue)
             query = query.Where(i => i.TotalAmount >= filter.MinAmount.Value);
 
@@ -164,7 +138,6 @@ public class InvoiceService
             "customer" => isAsc ? query.OrderBy(i => i.Customer.Name) : query.OrderByDescending(i => i.Customer.Name),
             "amount" => isAsc ? query.OrderBy(i => i.TotalAmount) : query.OrderByDescending(i => i.TotalAmount),
             "partno" => isAsc ? query.OrderBy(i => i.Product.PartNo) : query.OrderByDescending(i => i.Product.PartNo),
-            "islocked" => isAsc ? query.OrderBy(i => i.IsLocked) : query.OrderByDescending(i => i.IsLocked),
             _ => query.OrderByDescending(i => i.CreatedAt)
         };
 
@@ -192,9 +165,6 @@ public class InvoiceService
             .Include(i => i.DcLedger)
             .FirstOrDefaultAsync(i => i.Id == id)
             ?? throw new KeyNotFoundException($"Invoice with ID {id} not found.");
-
-        if (!invoice.IsLocked)
-            throw new InvalidOperationException("Cannot export incomplete invoice. Please complete shipping metadata first.");
 
         var companyProfile = _configuration.GetSection("CompanyProfile");
         var pdfBytes = InvoicePdfGenerator.Generate(invoice, companyProfile);
@@ -238,9 +208,7 @@ public class InvoiceService
         Destination = invoice.Destination,
         TermsOfDelivery = invoice.TermsOfDelivery,
         AsnNo = invoice.AsnNo,
-        TransportDetails = invoice.TransportDetails,
         EwbNo = invoice.EwbNo,
-        IsLocked = invoice.IsLocked,
         DownloadUrl = invoice.StoredFilePath != null ? $"/api/files/invoice/{Uri.EscapeDataString(invoice.InvoiceNo)}.pdf" : null,
         CreatedAt = invoice.CreatedAt
     };
