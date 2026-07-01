@@ -83,16 +83,23 @@ public class DashboardService
 
         // ─── Chart: Monthly Revenue (last 6 months) ──────────
         var sixMonthsAgo = today.AddMonths(-6);
-        var monthlyRevenueChart = await _context.Invoices
+        var monthlyRevenueChart = (await _context.Invoices
             .Where(i => i.Date >= sixMonthsAgo)
             .GroupBy(i => new { i.Date.Year, i.Date.Month })
-            .Select(g => new MonthlyRevenuePoint
+            .Select(g => new
             {
-                Month = $"{g.Key.Year}-{g.Key.Month:D2}",
+                g.Key.Year,
+                g.Key.Month,
                 Revenue = g.Sum(x => x.TotalAmount)
             })
-            .OrderBy(x => x.Month)
-            .ToListAsync();
+            .OrderBy(x => x.Year).ThenBy(x => x.Month)
+            .ToListAsync())
+            .Select(x => new MonthlyRevenuePoint
+            {
+                Month = $"{x.Year}-{x.Month:D2}",
+                Revenue = x.Revenue
+            })
+            .ToList();
 
         // ─── Chart: Ledger Status Breakdown (pie/donut) ──────
         var statusBreakdown = await _context.JobWorkLedgers
