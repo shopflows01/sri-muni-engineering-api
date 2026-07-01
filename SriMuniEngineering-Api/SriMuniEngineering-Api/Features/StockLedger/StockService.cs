@@ -175,45 +175,51 @@ public class StockService
             .OrderByDescending(l => l.DcDate)
             .ToListAsync();
 
-        using var workbook = new XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("Stock Report");
+        var stream = new MemoryStream();
 
-        // Header row
-        worksheet.Cell(1, 1).Value = "DC No";
-        worksheet.Cell(1, 2).Value = "DC Date";
-        worksheet.Cell(1, 3).Value = "Customer";
-        worksheet.Cell(1, 4).Value = "Part No";
-        worksheet.Cell(1, 5).Value = "Part Name";
-        worksheet.Cell(1, 6).Value = "Inward Qty";
-        worksheet.Cell(1, 7).Value = "Outward Qty";
-        worksheet.Cell(1, 8).Value = "Rejected Qty";
-        worksheet.Cell(1, 9).Value = "Status";
-
-        // Style header
-        var headerRange = worksheet.Range(1, 1, 1, 9);
-        headerRange.Style.Font.Bold = true;
-        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
-
-        // Data rows
-        for (int i = 0; i < ledgers.Count; i++)
+        // Workbook must be fully disposed before reading the stream.
+        // ClosedXML writes the ZIP end-of-central-directory record only on Dispose(),
+        // so calling ToArray() while the workbook is still alive produces a truncated file.
+        using (var workbook = new XLWorkbook())
         {
-            var row = i + 2;
-            var l = ledgers[i];
-            worksheet.Cell(row, 1).Value = l.DcNo;
-            worksheet.Cell(row, 2).Value = l.DcDate.ToString("dd-MM-yyyy");
-            worksheet.Cell(row, 3).Value = l.Customer.Name;
-            worksheet.Cell(row, 4).Value = l.Product.PartNo;
-            worksheet.Cell(row, 5).Value = l.Product.PartName;
-            worksheet.Cell(row, 6).Value = l.InwardQty;
-            worksheet.Cell(row, 7).Value = l.OutwardQty;
-            worksheet.Cell(row, 8).Value = l.RejectedQty;
-            worksheet.Cell(row, 9).Value = l.Status.ToString();
-        }
+            var worksheet = workbook.Worksheets.Add("Stock Report");
 
-        worksheet.Columns().AdjustToContents();
+            // Header row
+            worksheet.Cell(1, 1).Value = "DC No";
+            worksheet.Cell(1, 2).Value = "DC Date";
+            worksheet.Cell(1, 3).Value = "Customer";
+            worksheet.Cell(1, 4).Value = "Part No";
+            worksheet.Cell(1, 5).Value = "Part Name";
+            worksheet.Cell(1, 6).Value = "Inward Qty";
+            worksheet.Cell(1, 7).Value = "Outward Qty";
+            worksheet.Cell(1, 8).Value = "Rejected Qty";
+            worksheet.Cell(1, 9).Value = "Status";
 
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
+            // Style header
+            var headerRange = worksheet.Range(1, 1, 1, 9);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+            // Data rows
+            for (int i = 0; i < ledgers.Count; i++)
+            {
+                var row = i + 2;
+                var l = ledgers[i];
+                worksheet.Cell(row, 1).Value = l.DcNo;
+                worksheet.Cell(row, 2).Value = l.DcDate.ToString("dd-MM-yyyy");
+                worksheet.Cell(row, 3).Value = l.Customer.Name;
+                worksheet.Cell(row, 4).Value = l.Product.PartNo;
+                worksheet.Cell(row, 5).Value = l.Product.PartName;
+                worksheet.Cell(row, 6).Value = l.InwardQty;
+                worksheet.Cell(row, 7).Value = l.OutwardQty;
+                worksheet.Cell(row, 8).Value = l.RejectedQty;
+                worksheet.Cell(row, 9).Value = l.Status.ToString();
+            }
+
+            worksheet.Columns().AdjustToContents();
+            workbook.SaveAs(stream);
+        } // Dispose flushes ZIP central directory into the stream
+
         var bytes = stream.ToArray();
 
         // Upload to Supabase
