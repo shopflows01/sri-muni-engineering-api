@@ -94,7 +94,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
-            ?? new[] { "http://localhost:4200", "https://sri-muni-engineering.vercel.app/" };
+            ?? new[] { "http://localhost:4200", "https://sri-muni-engineering.vercel.app" };
             
         policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
