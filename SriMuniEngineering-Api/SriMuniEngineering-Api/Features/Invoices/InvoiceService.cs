@@ -26,8 +26,8 @@ public class InvoiceService
         var ledger = await _context.JobWorkLedgers.FindAsync(request.DcLedgerId)
             ?? throw new KeyNotFoundException("DC Ledger entry not found.");
 
-        if (ledger.Status != LedgerStatus.ReadyForInvoice)
-            throw new InvalidOperationException("Ledger entry is not ready for invoicing.");
+        if (ledger.OutwardQty <= 0)
+            throw new InvalidOperationException("No outward quantity recorded. Update outward dispatch before creating an invoice.");
 
         var taxableValue = request.Quantity * request.Rate;
         var igstAmount = taxableValue * request.IgstRate / 100;
@@ -67,8 +67,48 @@ public class InvoiceService
 
         _context.Invoices.Add(invoice);
 
-        // Update ledger status
-        ledger.Status = LedgerStatus.Invoiced;
+        await _context.SaveChangesAsync();
+
+        return await GetByIdAsync(invoice.Id);
+    }
+
+    public async Task<InvoiceResponse> UpdateAsync(Guid id, UpdateInvoiceRequest request)
+    {
+        var invoice = await _context.Invoices.FindAsync(id)
+            ?? throw new KeyNotFoundException($"Invoice with ID {id} not found.");
+
+        var taxableValue = request.Quantity * request.Rate;
+        var igstAmount = taxableValue * request.IgstRate / 100;
+        var cgstAmount = taxableValue * request.CgstRate / 100;
+        var sgstAmount = taxableValue * request.SgstRate / 100;
+        var totalAmount = taxableValue + igstAmount + cgstAmount + sgstAmount;
+
+        invoice.InvoiceNo = request.InvoiceNo;
+        invoice.Date = request.Date;
+        invoice.CustomerId = request.CustomerId;
+        invoice.ProductId = request.ProductId;
+        invoice.Quantity = request.Quantity;
+        invoice.Rate = request.Rate;
+        invoice.TaxableValue = taxableValue;
+        invoice.IgstRate = request.IgstRate;
+        invoice.IgstAmount = igstAmount;
+        invoice.CgstRate = request.CgstRate;
+        invoice.CgstAmount = cgstAmount;
+        invoice.SgstRate = request.SgstRate;
+        invoice.SgstAmount = sgstAmount;
+        invoice.TotalAmount = totalAmount;
+        invoice.AmountInWords = ConvertToWords(totalAmount);
+        invoice.DeliveryNoteNo = request.DeliveryNoteNo;
+        invoice.ReferenceNo = request.ReferenceNo;
+        invoice.BuyersOrderNo = request.BuyersOrderNo;
+        invoice.DispatchDocNo = request.DispatchDocNo;
+        invoice.Destination = request.Destination;
+        invoice.TermsOfDelivery = request.TermsOfDelivery;
+        invoice.AsnNo = request.AsnNo;
+        invoice.EwbNo = request.EwbNo;
+
+        // Clear cached PDF so it gets regenerated with updated data
+        invoice.StoredFilePath = null;
 
         await _context.SaveChangesAsync();
 

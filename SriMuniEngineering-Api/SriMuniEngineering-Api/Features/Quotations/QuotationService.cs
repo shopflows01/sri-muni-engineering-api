@@ -155,6 +155,35 @@ public class QuotationService
         return $"{baseUrl}/api/files/quotation/{Uri.EscapeDataString(quotation.QuotationNo)}.pdf";
     }
 
+    /// <summary>
+    /// Returns the raw PDF bytes for the quotation. Generates and uploads if not already stored.
+    /// </summary>
+    public async Task<(byte[] Bytes, string FileName)> GetPdfBytesAsync(Guid id)
+    {
+        var quotation = await _context.Quotations
+            .Include(q => q.Customer)
+            .Include(q => q.Product)
+            .FirstOrDefaultAsync(q => q.Id == id)
+            ?? throw new KeyNotFoundException($"Quotation with ID {id} not found.");
+
+        var fileName = $"{quotation.QuotationNo.Replace("/", "-")}.pdf";
+
+        if (!string.IsNullOrEmpty(quotation.StoredFilePath))
+        {
+            var downloaded = await _storageService.DownloadFileAsync(quotation.StoredFilePath);
+            return (downloaded, fileName);
+        }
+
+        var companyProfile = _configuration.GetSection("CompanyProfile");
+        var pdfBytes = QuotationPdfGenerator.Generate(quotation, companyProfile);
+
+        var storedPath = await _storageService.UploadFileAsync("quotations", fileName, pdfBytes, "application/pdf");
+        quotation.StoredFilePath = storedPath;
+        await _context.SaveChangesAsync();
+
+        return (pdfBytes, fileName);
+    }
+
     private QuotationResponse MapToResponse(Quotation q)
     {
         var operations = JsonSerializer.Deserialize<List<OperationItem>>(q.OperationsJson) ?? [];

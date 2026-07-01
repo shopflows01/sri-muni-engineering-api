@@ -15,6 +15,7 @@ public class LedgerResponse
     public int InwardQty { get; set; }
     public int OutwardQty { get; set; }
     public int RejectedQty { get; set; }
+    public int PendingQty => InwardQty - OutwardQty - RejectedQty;
     public LedgerStatus Status { get; set; }
     public string StatusText => Status.ToString();
     public DateTime CreatedAt { get; set; }

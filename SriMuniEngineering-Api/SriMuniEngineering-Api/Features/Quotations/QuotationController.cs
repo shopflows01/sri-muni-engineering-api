@@ -60,4 +60,21 @@ public class QuotationController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Streams the PDF directly as application/pdf. Generates and uploads if not already stored.
+    /// </summary>
+    [HttpGet("{id:guid}/pdf/preview")]
+    public async Task<IActionResult> DownloadPdf(Guid id)
+    {
+        try
+        {
+            var (bytes, fileName) = await _quotationService.GetPdfBytesAsync(id);
+            return File(bytes, "application/pdf", fileName);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }

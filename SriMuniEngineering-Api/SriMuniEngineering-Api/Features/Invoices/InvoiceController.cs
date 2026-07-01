@@ -33,6 +33,20 @@ public class InvoiceController : ControllerBase
         }
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] Dtos.UpdateInvoiceRequest request)
+    {
+        try
+        {
+            var result = await _invoiceService.UpdateAsync(id, request);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {

@@ -47,16 +47,15 @@ public class StockService
         var ledger = await _context.JobWorkLedgers.FindAsync(id)
             ?? throw new KeyNotFoundException($"Ledger entry with ID {id} not found.");
 
-        if (ledger.Status == LedgerStatus.Invoiced)
-            throw new InvalidOperationException("Cannot modify an invoiced ledger entry.");
-
-        if (request.OutwardQty + request.RejectedQty != ledger.InwardQty)
+        var newOutward = ledger.OutwardQty + request.OutwardQty;
+        if (newOutward + ledger.RejectedQty > ledger.InwardQty)
             throw new InvalidOperationException(
-                $"OutwardQty ({request.OutwardQty}) + RejectedQty ({request.RejectedQty}) must equal InwardQty ({ledger.InwardQty}).");
+                $"Total OutwardQty ({newOutward}) + RejectedQty ({ledger.RejectedQty}) cannot exceed InwardQty ({ledger.InwardQty}).");
 
-        ledger.OutwardQty = request.OutwardQty;
-        ledger.RejectedQty = request.RejectedQty;
-        ledger.Status = LedgerStatus.ReadyForInvoice;
+        ledger.OutwardQty = newOutward;
+        ledger.Status = (ledger.OutwardQty + ledger.RejectedQty == ledger.InwardQty)
+            ? LedgerStatus.ReadyForInvoice
+            : LedgerStatus.InProgress;
 
         await _context.SaveChangesAsync();
 
@@ -68,15 +67,15 @@ public class StockService
         var ledger = await _context.JobWorkLedgers.FindAsync(id)
             ?? throw new KeyNotFoundException($"Ledger entry with ID {id} not found.");
 
-        if (ledger.Status == LedgerStatus.Invoiced)
-            throw new InvalidOperationException("Cannot modify an invoiced ledger entry.");
-
-        if (ledger.OutwardQty + request.RejectedQty != ledger.InwardQty)
+        var newRejected = ledger.RejectedQty + request.RejectedQty;
+        if (ledger.OutwardQty + newRejected > ledger.InwardQty)
             throw new InvalidOperationException(
-                $"OutwardQty ({ledger.OutwardQty}) + RejectedQty ({request.RejectedQty}) must equal InwardQty ({ledger.InwardQty}).");
+                $"OutwardQty ({ledger.OutwardQty}) + Total RejectedQty ({newRejected}) cannot exceed InwardQty ({ledger.InwardQty}).");
 
-        ledger.RejectedQty = request.RejectedQty;
-        ledger.Status = LedgerStatus.ReadyForInvoice;
+        ledger.RejectedQty = newRejected;
+        ledger.Status = (ledger.OutwardQty + ledger.RejectedQty == ledger.InwardQty)
+            ? LedgerStatus.ReadyForInvoice
+            : LedgerStatus.InProgress;
 
         await _context.SaveChangesAsync();
 
