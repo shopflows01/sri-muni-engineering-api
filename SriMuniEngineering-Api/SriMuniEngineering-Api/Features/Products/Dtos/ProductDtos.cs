@@ -38,4 +38,6 @@ public class ProductResponse
     public decimal BasePricePerUnit { get; set; }
     public string HsnSac { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
 }

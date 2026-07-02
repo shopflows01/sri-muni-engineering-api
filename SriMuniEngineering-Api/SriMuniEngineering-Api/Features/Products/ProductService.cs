@@ -40,7 +40,7 @@ public class ProductService
 
     public async Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request)
     {
-        var product = await _context.Products.FindAsync(id)
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new KeyNotFoundException($"Product with ID {id} not found.");
 
         product.PartNo = request.PartNo;
@@ -56,7 +56,7 @@ public class ProductService
 
     public async Task<ProductResponse> GetByIdAsync(Guid id)
     {
-        var product = await _context.Products.FindAsync(id)
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new KeyNotFoundException($"Product with ID {id} not found.");
 
         return MapToResponse(product);
@@ -98,10 +98,11 @@ public class ProductService
 
     public async Task DeleteAsync(Guid id)
     {
-        var product = await _context.Products.FindAsync(id)
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new KeyNotFoundException($"Product with ID {id} not found.");
 
-        _context.Products.Remove(product);
+        product.IsDeleted = true;
+        product.DeletedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
     }
 
@@ -113,6 +114,8 @@ public class ProductService
         PartDescription = p.PartDescription,
         BasePricePerUnit = p.BasePricePerUnit,
         HsnSac = p.HsnSac,
-        Unit = p.Unit
+        Unit = p.Unit,
+        IsDeleted = p.IsDeleted,
+        DeletedAt = p.DeletedAt
     };
 }

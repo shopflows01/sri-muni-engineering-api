@@ -13,6 +13,8 @@ public class Customer
     public string Phone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? VendorCode { get; set; }
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
 
     // Navigation properties
     public ICollection<JobWorkLedger> JobWorkLedgers { get; set; } = [];

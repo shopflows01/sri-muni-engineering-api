@@ -9,6 +9,8 @@ public class Product
     public decimal BasePricePerUnit { get; set; }
     public string HsnSac { get; set; } = string.Empty;
     public string Unit { get; set; } = "Nos";
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
 
     // Navigation properties
     public ICollection<JobWorkLedger> JobWorkLedgers { get; set; } = [];

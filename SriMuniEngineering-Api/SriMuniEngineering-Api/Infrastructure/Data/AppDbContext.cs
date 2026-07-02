@@ -36,7 +36,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Customer>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.GSTIN).IsUnique();
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasIndex(e => e.GSTIN).IsUnique().HasFilter("IsDeleted = 0");
             entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.BillingAddress).HasMaxLength(500).IsRequired();
             entity.Property(e => e.ShippingAddress).HasMaxLength(500).IsRequired();
@@ -52,7 +53,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Product>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.PartNo).IsUnique();
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasIndex(e => e.PartNo).IsUnique().HasFilter("IsDeleted = 0");
             entity.Property(e => e.PartNo).HasMaxLength(100).IsRequired();
             entity.Property(e => e.PartName).HasMaxLength(200).IsRequired();
             entity.Property(e => e.PartDescription).HasMaxLength(500);

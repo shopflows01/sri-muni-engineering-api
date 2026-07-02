@@ -44,7 +44,7 @@ public class CustomerService
 
     public async Task<CustomerResponse> UpdateAsync(Guid id, UpdateCustomerRequest request)
     {
-        var customer = await _context.Customers.FindAsync(id)
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id)
             ?? throw new KeyNotFoundException($"Customer with ID {id} not found.");
 
         customer.Name = request.Name;
@@ -64,7 +64,7 @@ public class CustomerService
 
     public async Task<CustomerResponse> GetByIdAsync(Guid id)
     {
-        var customer = await _context.Customers.FindAsync(id)
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id)
             ?? throw new KeyNotFoundException($"Customer with ID {id} not found.");
 
         return MapToResponse(customer);
@@ -107,10 +107,11 @@ public class CustomerService
 
     public async Task DeleteAsync(Guid id)
     {
-        var customer = await _context.Customers.FindAsync(id)
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id)
             ?? throw new KeyNotFoundException($"Customer with ID {id} not found.");
 
-        _context.Customers.Remove(customer);
+        customer.IsDeleted = true;
+        customer.DeletedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
     }
 
@@ -126,6 +127,8 @@ public class CustomerService
         StateName = c.StateName,
         Phone = c.Phone,
         Email = c.Email,
-        VendorCode = c.VendorCode
+        VendorCode = c.VendorCode,
+        IsDeleted = c.IsDeleted,
+        DeletedAt = c.DeletedAt
     };
 }
