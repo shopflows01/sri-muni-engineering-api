@@ -15,6 +15,7 @@ using SriMuniEngineering_Api.Features.Invoices;
 using SriMuniEngineering_Api.Features.Quotations;
 using SriMuniEngineering_Api.Features.StockLedger;
 using SriMuniEngineering_Api.Infrastructure.Data;
+using SriMuniEngineering_Api.Infrastructure.Email;
 using SriMuniEngineering_Api.Infrastructure.Security;
 using SriMuniEngineering_Api.Infrastructure.Storage;
 
@@ -87,6 +88,9 @@ builder.Services.AddScoped<EWayBillService>();
 
 // ─── Supabase Storage HttpClient ──────────────────────────────────
 builder.Services.AddHttpClient<SupabaseStorageService>();
+
+// ─── Email ────────────────────────────────────────────────────────
+builder.Services.AddScoped<EmailService>();
 
 // ─── CORS ─────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
