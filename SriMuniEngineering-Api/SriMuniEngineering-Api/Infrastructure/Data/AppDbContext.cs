@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<JobWorkLedger> JobWorkLedgers => Set<JobWorkLedger>();
     public DbSet<Quotation> Quotations => Set<Quotation>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<InspectionReport> InspectionReports => Set<InspectionReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -111,18 +112,14 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.InvoiceNo).IsUnique();
+            entity.HasIndex(e => new { e.FinancialYear, e.InvoiceSequence }).IsUnique();
             entity.Property(e => e.InvoiceNo).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.Quantity).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.Rate).HasColumnType("decimal(18,4)");
-            entity.Property(e => e.TaxableValue).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.IgstRate).HasColumnType("decimal(5,2)");
-            entity.Property(e => e.IgstAmount).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.CgstRate).HasColumnType("decimal(5,2)");
-            entity.Property(e => e.CgstAmount).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.SgstRate).HasColumnType("decimal(5,2)");
-            entity.Property(e => e.SgstAmount).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.FinancialYear).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.SubTotal).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.GSTAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.GrandTotal).HasColumnType("decimal(18,2)");
             entity.Property(e => e.AmountInWords).HasMaxLength(500);
+            entity.Property(e => e.Remarks).HasMaxLength(1000);
             entity.Property(e => e.DeliveryNoteNo).HasMaxLength(100);
             entity.Property(e => e.ReferenceNo).HasMaxLength(100);
             entity.Property(e => e.BuyersOrderNo).HasMaxLength(100);
@@ -133,18 +130,31 @@ public class AppDbContext : DbContext
             entity.Property(e => e.EwbNo).HasMaxLength(100);
             entity.Property(e => e.StoredFilePath).HasMaxLength(500);
 
-            entity.HasOne(e => e.DcLedger)
-                .WithMany(l => l.Invoices)
-                .HasForeignKey(e => e.DcLedgerId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             entity.HasOne(e => e.Customer)
                 .WithMany(c => c.Invoices)
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── InvoiceItem ─────────────────────────────────────
+        modelBuilder.Entity<InvoiceItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Quantity).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Rate).HasColumnType("decimal(18,4)");
+            entity.Property(e => e.Discount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.GSTPercent).HasColumnType("decimal(5,2)");
+            entity.Property(e => e.GSTAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+
+            entity.HasOne(e => e.Invoice)
+                .WithMany(i => i.Items)
+                .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(e => e.Product)
-                .WithMany(p => p.Invoices)
+                .WithMany(p => p.InvoiceItems)
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
         });

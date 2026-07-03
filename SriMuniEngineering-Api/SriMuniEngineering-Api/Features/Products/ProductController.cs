@@ -11,10 +11,12 @@ namespace SriMuniEngineering_Api.Features.Products;
 public class ProductController : ControllerBase
 {
     private readonly ProductService _productService;
+    private readonly ProductAnalysisService _analysisService;
 
-    public ProductController(ProductService productService)
+    public ProductController(ProductService productService, ProductAnalysisService analysisService)
     {
         _productService = productService;
+        _analysisService = analysisService;
     }
 
     [HttpPost]
@@ -79,4 +81,19 @@ public class ProductController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
+    [HttpGet("{id:guid}/analysis")]
+    public async Task<IActionResult> GetAnalysis(Guid id)
+    {
+        try
+        {
+            var result = await _analysisService.GetAnalysisAsync(id);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }
+

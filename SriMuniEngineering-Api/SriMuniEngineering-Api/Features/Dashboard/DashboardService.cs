@@ -47,7 +47,7 @@ public class DashboardService
         var totalProducts = await _context.Products.CountAsync();
         var monthlyRevenue = await _context.Invoices
             .Where(i => i.Date >= monthStart)
-            .SumAsync(i => i.TotalAmount);
+            .SumAsync(i => i.GrandTotal);
 
         // ─── Chart: Daily Inward/Outward/Rejection (last 30 days) ─
         var dailyData = await _context.JobWorkLedgers
@@ -90,7 +90,7 @@ public class DashboardService
             {
                 g.Key.Year,
                 g.Key.Month,
-                Revenue = g.Sum(x => x.TotalAmount)
+                Revenue = g.Sum(x => x.GrandTotal)
             })
             .OrderBy(x => x.Year).ThenBy(x => x.Month)
             .ToListAsync())

@@ -19,7 +19,8 @@ public class EWayBillService
     {
         var invoices = await _context.Invoices
             .Include(i => i.Customer)
-            .Include(i => i.Product)
+            .Include(i => i.Items)
+                .ThenInclude(item => item.Product)
             .Where(i => invoiceIds.Contains(i.Id))
             .ToListAsync();
 
@@ -28,85 +29,96 @@ public class EWayBillService
 
         var company = _configuration.GetSection("CompanyProfile");
 
-        var billLists = invoices.Select((invoice, index) => new EWayBillEntry
+        var billLists = invoices.Select((invoice, index) =>
         {
-            UserGstin = company["Gstin"]!,
-            SupplyType = "O",
-            SubSupplyType = 1,
-            SubSupplyDesc = "",
-            DocType = "INV",
-            DocNo = invoice.InvoiceNo,
-            DocDate = invoice.Date.ToString("dd/MM/yyyy"),
-            TransType = 1,
+            // Aggregate GST values from items
+            var totalTaxableValue = invoice.Items.Sum(i => (i.Quantity * i.Rate) - i.Discount);
+            var totalGstAmount = invoice.Items.Sum(i => i.GSTAmount);
 
-            // From (Company)
-            FromGstin = company["Gstin"]!,
-            FromTrdName = company["Name"]!,
-            FromAddr1 = company["Address1"]!,
-            FromAddr2 = company["Address2"]!,
-            FromPlace = company["City"]!,
-            FromPincode = int.Parse(company["Pincode"]!),
-            FromStateCode = int.Parse(company["StateCode"]!),
-            ActualFromStateCode = int.Parse(company["StateCode"]!),
+            // Use the first item's HSN as the main HSN code
+            var mainHsnCode = invoice.Items.FirstOrDefault()?.Product.HsnSac ?? "";
 
-            // To (Customer)
-            ToGstin = invoice.Customer.GSTIN,
-            ToTrdName = invoice.Customer.Name,
-            ToAddr1 = invoice.Customer.BillingAddress,
-            ToAddr2 = invoice.Customer.ShippingAddress,
-            ToPlace = invoice.Customer.StateName,
-            ToPincode = int.Parse(invoice.Customer.Pincode),
-            ToStateCode = invoice.Customer.StateCode,
-            ActualToStateCode = invoice.Customer.StateCode,
+            return new EWayBillEntry
+            {
+                UserGstin = company["Gstin"]!,
+                SupplyType = "O",
+                SubSupplyType = 1,
+                SubSupplyDesc = "",
+                DocType = "INV",
+                DocNo = invoice.InvoiceNo,
+                DocDate = invoice.Date.ToString("dd/MM/yyyy"),
+                TransType = 1,
 
-            // Values
-            TotalValue = invoice.TaxableValue,
-            CgstValue = invoice.CgstAmount,
-            SgstValue = invoice.SgstAmount,
-            IgstValue = invoice.IgstAmount,
-            CessValue = 0,
-            TotNonAdvolVal = 0,
-            OthValue = 0,
-            TotInvValue = invoice.TotalAmount,
+                // From (Company)
+                FromGstin = company["Gstin"]!,
+                FromTrdName = company["Name"]!,
+                FromAddr1 = company["Address1"]!,
+                FromAddr2 = company["Address2"]!,
+                FromPlace = company["City"]!,
+                FromPincode = int.Parse(company["Pincode"]!),
+                FromStateCode = int.Parse(company["StateCode"]!),
+                ActualFromStateCode = int.Parse(company["StateCode"]!),
 
-            // Transport
-            TransMode = 1,
-            TransDistance = 0,
-            TransporterName = "",
-            TransporterId = "",
-            TransDocNo = "",
-            TransDocDate = invoice.Date.ToString("dd/MM/yyyy"),
-            VehicleNo = "",
-            VehicleType = "R",
+                // To (Customer)
+                ToGstin = invoice.Customer.GSTIN,
+                ToTrdName = invoice.Customer.Name,
+                ToAddr1 = invoice.Customer.BillingAddress,
+                ToAddr2 = invoice.Customer.ShippingAddress,
+                ToPlace = invoice.Customer.StateName,
+                ToPincode = int.Parse(invoice.Customer.Pincode),
+                ToStateCode = invoice.Customer.StateCode,
+                ActualToStateCode = invoice.Customer.StateCode,
 
-            // HSN
-            MainHsnCode = invoice.Product.HsnSac,
+                // Values — Split GST equally between CGST/SGST for intra-state
+                TotalValue = totalTaxableValue,
+                CgstValue = totalGstAmount / 2,
+                SgstValue = totalGstAmount / 2,
+                IgstValue = 0,
+                CessValue = 0,
+                TotNonAdvolVal = 0,
+                OthValue = 0,
+                TotInvValue = invoice.GrandTotal,
 
-            // Item list
-            ItemList =
-            [
-                new EWayBillItem
+                // Transport
+                TransMode = 1,
+                TransDistance = 0,
+                TransporterName = "",
+                TransporterId = "",
+                TransDocNo = "",
+                TransDocDate = invoice.Date.ToString("dd/MM/yyyy"),
+                VehicleNo = "",
+                VehicleType = "R",
+
+                // HSN
+                MainHsnCode = mainHsnCode,
+
+                // Item list
+                ItemList = invoice.Items.Select((item, idx) =>
                 {
-                    ItemNo = 1,
-                    ProductName = invoice.Product.PartName,
-                    ProductDesc = invoice.Product.PartDescription ?? invoice.Product.PartName,
-                    HsnCode = invoice.Product.HsnSac,
-                    Quantity = invoice.Quantity,
-                    QtyUnit = invoice.Product.Unit.ToUpper() switch
+                    var taxableAmount = (item.Quantity * item.Rate) - item.Discount;
+                    return new EWayBillItem
                     {
-                        "NOS" => "NOS",
-                        "KGS" => "KGS",
-                        "PCS" => "PCS",
-                        _ => "NOS"
-                    },
-                    TaxableAmount = invoice.TaxableValue,
-                    SgstRate = invoice.SgstRate,
-                    CgstRate = invoice.CgstRate,
-                    IgstRate = invoice.IgstRate,
-                    CessRate = 0,
-                    CessNonAdvol = 0
-                }
-            ]
+                        ItemNo = idx + 1,
+                        ProductName = item.Product.PartName,
+                        ProductDesc = item.Description ?? item.Product.PartDescription ?? item.Product.PartName,
+                        HsnCode = item.Product.HsnSac,
+                        Quantity = item.Quantity,
+                        QtyUnit = item.Product.Unit.ToUpper() switch
+                        {
+                            "NOS" => "NOS",
+                            "KGS" => "KGS",
+                            "PCS" => "PCS",
+                            _ => "NOS"
+                        },
+                        TaxableAmount = taxableAmount,
+                        SgstRate = item.GSTPercent / 2,
+                        CgstRate = item.GSTPercent / 2,
+                        IgstRate = 0,
+                        CessRate = 0,
+                        CessNonAdvol = 0
+                    };
+                }).ToList()
+            };
         }).ToList();
 
         return new EWayBillRoot

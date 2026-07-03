@@ -15,6 +15,13 @@ public class InvoiceController : ControllerBase
         _invoiceService = invoiceService;
     }
 
+    [HttpGet("next-number")]
+    public async Task<IActionResult> GetNextInvoiceNumber()
+    {
+        var result = await _invoiceService.GetNextInvoiceNumberAsync();
+        return Ok(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] Dtos.CreateInvoiceRequest request)
     {
@@ -68,6 +75,10 @@ public class InvoiceController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Generates the invoice PDF, uploads to storage, and returns the download URL.
+    /// Single page, no labels.
+    /// </summary>
     [HttpGet("{id:guid}/pdf")]
     public async Task<IActionResult> GeneratePdf(Guid id)
     {
@@ -76,6 +87,29 @@ public class InvoiceController : ControllerBase
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var downloadUrl = await _invoiceService.GeneratePdfAsync(id, baseUrl);
             return Ok(new { downloadUrl });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Streams the invoice PDF directly as application/pdf with optional labels.
+    /// Each true label adds a page. If none are true, generates single page without label.
+    /// </summary>
+    [HttpGet("{id:guid}/pdf/preview")]
+    public async Task<IActionResult> PreviewPdf(
+        Guid id,
+        [FromQuery] bool originalForRecipient = false,
+        [FromQuery] bool duplicateForTransporter = false,
+        [FromQuery] bool triplicateForSupplier = false)
+    {
+        try
+        {
+            var (bytes, fileName) = await _invoiceService.GetPdfPreviewBytesAsync(
+                id, originalForRecipient, duplicateForTransporter, triplicateForSupplier);
+            return File(bytes, "application/pdf", fileName);
         }
         catch (KeyNotFoundException ex)
         {

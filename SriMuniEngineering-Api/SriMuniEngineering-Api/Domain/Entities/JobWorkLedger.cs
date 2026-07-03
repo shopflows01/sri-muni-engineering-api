@@ -18,6 +18,5 @@ public class JobWorkLedger
     // Navigation properties
     public Customer Customer { get; set; } = null!;
     public Product Product { get; set; } = null!;
-    public ICollection<Invoice> Invoices { get; set; } = [];
     public ICollection<InspectionReport> InspectionReports { get; set; } = [];
 }

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SriMuniEngineering_Api.Common;
 using SriMuniEngineering_Api.Domain.Entities;
-using SriMuniEngineering_Api.Domain.Enums;
 using SriMuniEngineering_Api.Features.Invoices.Dtos;
 using SriMuniEngineering_Api.Infrastructure.Data;
 using SriMuniEngineering_Api.Infrastructure.Storage;
@@ -21,39 +20,77 @@ public class InvoiceService
         _configuration = configuration;
     }
 
+    // ─── Next Invoice Number Preview ─────────────────────────────
+    public async Task<NextInvoiceNumberResponse> GetNextInvoiceNumberAsync()
+    {
+        var financialYear = FinancialYearHelper.GetCurrentFinancialYear();
+        var maxSequence = await _context.Invoices
+            .Where(i => i.FinancialYear == financialYear)
+            .MaxAsync(i => (int?)i.InvoiceSequence) ?? 0;
+
+        var nextSequence = maxSequence + 1;
+
+        return new NextInvoiceNumberResponse
+        {
+            InvoiceNo = $"{nextSequence}/{financialYear}",
+            InvoiceSequence = nextSequence,
+            FinancialYear = financialYear
+        };
+    }
+
+    // ─── Create Invoice ──────────────────────────────────────────
     public async Task<InvoiceResponse> CreateAsync(CreateInvoiceRequest request)
     {
-        var ledger = await _context.JobWorkLedgers.FindAsync(request.DcLedgerId)
-            ?? throw new KeyNotFoundException("DC Ledger entry not found.");
+        // Generate invoice number from the invoice date
+        var financialYear = FinancialYearHelper.GetFinancialYear(request.InvoiceDate);
+        var maxSequence = await _context.Invoices
+            .Where(i => i.FinancialYear == financialYear)
+            .MaxAsync(i => (int?)i.InvoiceSequence) ?? 0;
+        var nextSequence = maxSequence + 1;
 
-        if (ledger.OutwardQty <= 0)
-            throw new InvalidOperationException("No outward quantity recorded. Update outward dispatch before creating an invoice.");
+        // Build invoice items and compute totals
+        var invoiceItems = new List<InvoiceItem>();
+        decimal subTotal = 0;
+        decimal totalGst = 0;
 
-        var taxableValue = request.Quantity * request.Rate;
-        var igstAmount = taxableValue * request.IgstRate / 100;
-        var cgstAmount = taxableValue * request.CgstRate / 100;
-        var sgstAmount = taxableValue * request.SgstRate / 100;
-        var totalAmount = taxableValue + igstAmount + cgstAmount + sgstAmount;
+        foreach (var itemReq in request.Items)
+        {
+            var lineAmount = (itemReq.Quantity * itemReq.Rate) - itemReq.Discount;
+            var lineGst = lineAmount * itemReq.GSTPercent / 100;
+
+            var item = new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                ProductId = itemReq.ProductId,
+                Description = itemReq.Description,
+                Quantity = itemReq.Quantity,
+                Rate = itemReq.Rate,
+                Discount = itemReq.Discount,
+                GSTPercent = itemReq.GSTPercent,
+                GSTAmount = lineGst,
+                Amount = lineAmount + lineGst
+            };
+
+            invoiceItems.Add(item);
+            subTotal += lineAmount;
+            totalGst += lineGst;
+        }
+
+        var grandTotal = subTotal + totalGst;
 
         var invoice = new Invoice
         {
             Id = Guid.NewGuid(),
-            InvoiceNo = request.InvoiceNo,
-            Date = request.Date,
-            DcLedgerId = request.DcLedgerId,
+            InvoiceNo = $"{nextSequence}/{financialYear}",
+            InvoiceSequence = nextSequence,
+            FinancialYear = financialYear,
+            Date = request.InvoiceDate,
             CustomerId = request.CustomerId,
-            ProductId = request.ProductId,
-            Quantity = request.Quantity,
-            Rate = request.Rate,
-            TaxableValue = taxableValue,
-            IgstRate = request.IgstRate,
-            IgstAmount = igstAmount,
-            CgstRate = request.CgstRate,
-            CgstAmount = cgstAmount,
-            SgstRate = request.SgstRate,
-            SgstAmount = sgstAmount,
-            TotalAmount = totalAmount,
-            AmountInWords = ConvertToWords(totalAmount),
+            SubTotal = subTotal,
+            GSTAmount = totalGst,
+            GrandTotal = grandTotal,
+            AmountInWords = ConvertToWords(grandTotal),
+            Remarks = request.Remarks,
             DeliveryNoteNo = request.DeliveryNoteNo,
             ReferenceNo = request.ReferenceNo,
             BuyersOrderNo = request.BuyersOrderNo,
@@ -62,42 +99,65 @@ public class InvoiceService
             TermsOfDelivery = request.TermsOfDelivery,
             AsnNo = request.AsnNo,
             EwbNo = request.EwbNo,
+            Items = invoiceItems,
             CreatedAt = DateTime.UtcNow
         };
 
         _context.Invoices.Add(invoice);
-
         await _context.SaveChangesAsync();
 
         return await GetByIdAsync(invoice.Id);
     }
 
+    // ─── Update Invoice ──────────────────────────────────────────
     public async Task<InvoiceResponse> UpdateAsync(Guid id, UpdateInvoiceRequest request)
     {
-        var invoice = await _context.Invoices.FindAsync(id)
+        var invoice = await _context.Invoices
+            .Include(i => i.Items)
+            .FirstOrDefaultAsync(i => i.Id == id)
             ?? throw new KeyNotFoundException($"Invoice with ID {id} not found.");
 
-        var taxableValue = request.Quantity * request.Rate;
-        var igstAmount = taxableValue * request.IgstRate / 100;
-        var cgstAmount = taxableValue * request.CgstRate / 100;
-        var sgstAmount = taxableValue * request.SgstRate / 100;
-        var totalAmount = taxableValue + igstAmount + cgstAmount + sgstAmount;
+        // Remove existing items
+        _context.InvoiceItems.RemoveRange(invoice.Items);
 
-        invoice.InvoiceNo = request.InvoiceNo;
-        invoice.Date = request.Date;
+        // Build new items and compute totals
+        var invoiceItems = new List<InvoiceItem>();
+        decimal subTotal = 0;
+        decimal totalGst = 0;
+
+        foreach (var itemReq in request.Items)
+        {
+            var lineAmount = (itemReq.Quantity * itemReq.Rate) - itemReq.Discount;
+            var lineGst = lineAmount * itemReq.GSTPercent / 100;
+
+            var item = new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                InvoiceId = invoice.Id,
+                ProductId = itemReq.ProductId,
+                Description = itemReq.Description,
+                Quantity = itemReq.Quantity,
+                Rate = itemReq.Rate,
+                Discount = itemReq.Discount,
+                GSTPercent = itemReq.GSTPercent,
+                GSTAmount = lineGst,
+                Amount = lineAmount + lineGst
+            };
+
+            invoiceItems.Add(item);
+            subTotal += lineAmount;
+            totalGst += lineGst;
+        }
+
+        var grandTotal = subTotal + totalGst;
+
+        invoice.Date = request.InvoiceDate;
         invoice.CustomerId = request.CustomerId;
-        invoice.ProductId = request.ProductId;
-        invoice.Quantity = request.Quantity;
-        invoice.Rate = request.Rate;
-        invoice.TaxableValue = taxableValue;
-        invoice.IgstRate = request.IgstRate;
-        invoice.IgstAmount = igstAmount;
-        invoice.CgstRate = request.CgstRate;
-        invoice.CgstAmount = cgstAmount;
-        invoice.SgstRate = request.SgstRate;
-        invoice.SgstAmount = sgstAmount;
-        invoice.TotalAmount = totalAmount;
-        invoice.AmountInWords = ConvertToWords(totalAmount);
+        invoice.SubTotal = subTotal;
+        invoice.GSTAmount = totalGst;
+        invoice.GrandTotal = grandTotal;
+        invoice.AmountInWords = ConvertToWords(grandTotal);
+        invoice.Remarks = request.Remarks;
         invoice.DeliveryNoteNo = request.DeliveryNoteNo;
         invoice.ReferenceNo = request.ReferenceNo;
         invoice.BuyersOrderNo = request.BuyersOrderNo;
@@ -110,28 +170,32 @@ public class InvoiceService
         // Clear cached PDF so it gets regenerated with updated data
         invoice.StoredFilePath = null;
 
+        _context.InvoiceItems.AddRange(invoiceItems);
         await _context.SaveChangesAsync();
 
         return await GetByIdAsync(invoice.Id);
     }
 
+    // ─── Get By Id ───────────────────────────────────────────────
     public async Task<InvoiceResponse> GetByIdAsync(Guid id)
     {
         var invoice = await _context.Invoices
             .Include(i => i.Customer)
-            .Include(i => i.Product)
-            .Include(i => i.DcLedger)
+            .Include(i => i.Items)
+                .ThenInclude(item => item.Product)
             .FirstOrDefaultAsync(i => i.Id == id)
             ?? throw new KeyNotFoundException($"Invoice with ID {id} not found.");
 
         return MapToResponse(invoice);
     }
 
+    // ─── Get All (Paginated) ─────────────────────────────────────
     public async Task<PaginatedResponse<InvoiceResponse>> GetAllAsync(InvoiceFilterRequest filter)
     {
         var query = _context.Invoices
             .Include(i => i.Customer)
-            .Include(i => i.Product)
+            .Include(i => i.Items)
+                .ThenInclude(item => item.Product)
             .AsQueryable();
 
         // ─── Filters ──────────────────────────────────────────
@@ -142,13 +206,13 @@ public class InvoiceService
             query = query.Where(i => i.CustomerId == filter.CustomerId.Value);
 
         if (filter.ProductId.HasValue)
-            query = query.Where(i => i.ProductId == filter.ProductId.Value);
+            query = query.Where(i => i.Items.Any(item => item.ProductId == filter.ProductId.Value));
 
         if (!string.IsNullOrWhiteSpace(filter.CustomerName))
             query = query.Where(i => i.Customer.Name.Contains(filter.CustomerName));
 
         if (!string.IsNullOrWhiteSpace(filter.PartNo))
-            query = query.Where(i => i.Product.PartNo.Contains(filter.PartNo));
+            query = query.Where(i => i.Items.Any(item => item.Product.PartNo.Contains(filter.PartNo)));
 
         if (filter.FromDate.HasValue)
             query = query.Where(i => i.Date >= filter.FromDate.Value);
@@ -157,27 +221,26 @@ public class InvoiceService
             query = query.Where(i => i.Date <= filter.ToDate.Value);
 
         if (filter.MinAmount.HasValue)
-            query = query.Where(i => i.TotalAmount >= filter.MinAmount.Value);
+            query = query.Where(i => i.GrandTotal >= filter.MinAmount.Value);
 
         if (filter.MaxAmount.HasValue)
-            query = query.Where(i => i.TotalAmount <= filter.MaxAmount.Value);
+            query = query.Where(i => i.GrandTotal <= filter.MaxAmount.Value);
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
             query = query.Where(i =>
                 i.InvoiceNo.Contains(filter.Search) ||
                 i.Customer.Name.Contains(filter.Search) ||
-                i.Product.PartNo.Contains(filter.Search) ||
-                i.Product.PartName.Contains(filter.Search));
+                i.Items.Any(item => item.Product.PartNo.Contains(filter.Search)) ||
+                i.Items.Any(item => item.Product.PartName.Contains(filter.Search)));
 
         // ─── Sorting ──────────────────────────────────────────
         var isAsc = filter.SortDirection.Equals("asc", StringComparison.OrdinalIgnoreCase);
         query = filter.SortBy?.ToLower() switch
         {
-            "invoiceno" => isAsc ? query.OrderBy(i => i.InvoiceNo) : query.OrderByDescending(i => i.InvoiceNo),
+            "invoiceno" => isAsc ? query.OrderBy(i => i.InvoiceSequence) : query.OrderByDescending(i => i.InvoiceSequence),
             "date" => isAsc ? query.OrderBy(i => i.Date) : query.OrderByDescending(i => i.Date),
             "customer" => isAsc ? query.OrderBy(i => i.Customer.Name) : query.OrderByDescending(i => i.Customer.Name),
-            "amount" => isAsc ? query.OrderBy(i => i.TotalAmount) : query.OrderByDescending(i => i.TotalAmount),
-            "partno" => isAsc ? query.OrderBy(i => i.Product.PartNo) : query.OrderByDescending(i => i.Product.PartNo),
+            "amount" => isAsc ? query.OrderBy(i => i.GrandTotal) : query.OrderByDescending(i => i.GrandTotal),
             _ => query.OrderByDescending(i => i.CreatedAt)
         };
 
@@ -197,12 +260,13 @@ public class InvoiceService
         };
     }
 
+    // ─── Generate PDF (Upload to storage, return URL) ────────────
     public async Task<string> GeneratePdfAsync(Guid id, string baseUrl)
     {
         var invoice = await _context.Invoices
             .Include(i => i.Customer)
-            .Include(i => i.Product)
-            .Include(i => i.DcLedger)
+            .Include(i => i.Items)
+                .ThenInclude(item => item.Product)
             .FirstOrDefaultAsync(i => i.Id == id)
             ?? throw new KeyNotFoundException($"Invoice with ID {id} not found.");
 
@@ -218,29 +282,41 @@ public class InvoiceService
         return $"{baseUrl}/api/files/invoice/{Uri.EscapeDataString(invoice.InvoiceNo)}.pdf";
     }
 
+    // ─── Preview PDF (Return bytes directly) ─────────────────────
+    public async Task<(byte[] Bytes, string FileName)> GetPdfPreviewBytesAsync(
+        Guid id, bool originalForRecipient, bool duplicateForTransporter, bool triplicateForSupplier)
+    {
+        var invoice = await _context.Invoices
+            .Include(i => i.Customer)
+            .Include(i => i.Items)
+                .ThenInclude(item => item.Product)
+            .FirstOrDefaultAsync(i => i.Id == id)
+            ?? throw new KeyNotFoundException($"Invoice with ID {id} not found.");
+
+        var companyProfile = _configuration.GetSection("CompanyProfile");
+        var pdfBytes = InvoicePdfGenerator.Generate(
+            invoice, companyProfile,
+            originalForRecipient, duplicateForTransporter, triplicateForSupplier);
+
+        var fileName = $"{invoice.InvoiceNo.Replace("/", "-")}.pdf";
+        return (pdfBytes, fileName);
+    }
+
+    // ─── Mapping ─────────────────────────────────────────────────
     private InvoiceResponse MapToResponse(Invoice invoice) => new()
     {
         Id = invoice.Id,
         InvoiceNo = invoice.InvoiceNo,
+        InvoiceSequence = invoice.InvoiceSequence,
+        FinancialYear = invoice.FinancialYear,
         Date = invoice.Date,
-        DcLedgerId = invoice.DcLedgerId,
         CustomerId = invoice.CustomerId,
         CustomerName = invoice.Customer.Name,
-        ProductId = invoice.ProductId,
-        PartNo = invoice.Product.PartNo,
-        PartName = invoice.Product.PartName,
-        HsnSac = invoice.Product.HsnSac,
-        Quantity = invoice.Quantity,
-        Rate = invoice.Rate,
-        TaxableValue = invoice.TaxableValue,
-        IgstRate = invoice.IgstRate,
-        IgstAmount = invoice.IgstAmount,
-        CgstRate = invoice.CgstRate,
-        CgstAmount = invoice.CgstAmount,
-        SgstRate = invoice.SgstRate,
-        SgstAmount = invoice.SgstAmount,
-        TotalAmount = invoice.TotalAmount,
+        SubTotal = invoice.SubTotal,
+        GSTAmount = invoice.GSTAmount,
+        GrandTotal = invoice.GrandTotal,
         AmountInWords = invoice.AmountInWords,
+        Remarks = invoice.Remarks,
         DeliveryNoteNo = invoice.DeliveryNoteNo,
         ReferenceNo = invoice.ReferenceNo,
         BuyersOrderNo = invoice.BuyersOrderNo,
@@ -249,10 +325,29 @@ public class InvoiceService
         TermsOfDelivery = invoice.TermsOfDelivery,
         AsnNo = invoice.AsnNo,
         EwbNo = invoice.EwbNo,
-        DownloadUrl = invoice.StoredFilePath != null ? $"/api/files/invoice/{Uri.EscapeDataString(invoice.InvoiceNo)}.pdf" : null,
+        DownloadUrl = invoice.StoredFilePath != null
+            ? $"/api/files/invoice/{Uri.EscapeDataString(invoice.InvoiceNo)}.pdf"
+            : null,
+        Items = invoice.Items.Select(item => new InvoiceItemResponse
+        {
+            Id = item.Id,
+            ProductId = item.ProductId,
+            PartNo = item.Product.PartNo,
+            PartName = item.Product.PartName,
+            HsnSac = item.Product.HsnSac,
+            Unit = item.Product.Unit,
+            Description = item.Description,
+            Quantity = item.Quantity,
+            Rate = item.Rate,
+            Discount = item.Discount,
+            GSTPercent = item.GSTPercent,
+            GSTAmount = item.GSTAmount,
+            Amount = item.Amount
+        }).ToList(),
         CreatedAt = invoice.CreatedAt
     };
 
+    // ─── Amount to Words (Indian numbering) ──────────────────────
     private static string ConvertToWords(decimal amount)
     {
         var intPart = (long)Math.Floor(amount);

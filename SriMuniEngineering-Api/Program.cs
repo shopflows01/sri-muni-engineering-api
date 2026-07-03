@@ -79,6 +79,7 @@ builder.Services.AddSingleton<TokenBlacklistService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<ProductAnalysisService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<StockService>();
 builder.Services.AddScoped<QuotationService>();

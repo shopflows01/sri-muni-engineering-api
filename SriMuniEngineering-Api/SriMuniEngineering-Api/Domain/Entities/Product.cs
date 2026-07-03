@@ -15,6 +15,6 @@ public class Product
     // Navigation properties
     public ICollection<JobWorkLedger> JobWorkLedgers { get; set; } = [];
     public ICollection<Quotation> Quotations { get; set; } = [];
-    public ICollection<Invoice> Invoices { get; set; } = [];
+    public ICollection<InvoiceItem> InvoiceItems { get; set; } = [];
     public ICollection<InspectionReport> InspectionReports { get; set; } = [];
 }
