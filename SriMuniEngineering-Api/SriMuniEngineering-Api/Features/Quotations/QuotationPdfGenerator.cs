@@ -10,7 +10,7 @@ namespace SriMuniEngineering_Api.Features.Quotations;
 public static class QuotationPdfGenerator
 {
     private static readonly string LogoPath = Path.Combine(
-        AppContext.BaseDirectory, "Assets", "sme-logo.png");
+        AppContext.BaseDirectory, "Assets", "svi-logo.png");
 
     public static byte[] Generate(Quotation quotation, IConfigurationSection companyProfile)
     {

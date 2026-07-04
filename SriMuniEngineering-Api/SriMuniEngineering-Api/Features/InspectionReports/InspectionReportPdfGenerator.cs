@@ -10,7 +10,7 @@ namespace SriMuniEngineering_Api.Features.InspectionReports;
 public static class InspectionReportPdfGenerator
 {
     private static readonly string LogoPath = Path.Combine(
-        AppContext.BaseDirectory, "Assets", "sme-logo.png");
+        AppContext.BaseDirectory, "Assets", "svi-logo.png");
 
     public static byte[] Generate(InspectionReport report, IConfigurationSection companyProfile)
     {

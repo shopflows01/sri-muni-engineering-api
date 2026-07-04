@@ -32,7 +32,7 @@ public class InvoiceService
 
         return new NextInvoiceNumberResponse
         {
-            InvoiceNo = $"{nextSequence}/{financialYear}",
+            InvoiceNo = $"{nextSequence:D3}/{financialYear}",
             InvoiceSequence = nextSequence,
             FinancialYear = financialYear
         };
@@ -82,7 +82,7 @@ public class InvoiceService
         var invoice = new Invoice
         {
             Id = Guid.NewGuid(),
-            InvoiceNo = $"{nextSequence}/{financialYear}",
+            InvoiceNo = $"{nextSequence:D3}/{financialYear}",
             InvoiceSequence = nextSequence,
             FinancialYear = financialYear,
             Date = request.InvoiceDate,

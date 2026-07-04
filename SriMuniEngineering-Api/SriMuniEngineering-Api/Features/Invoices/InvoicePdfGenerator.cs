@@ -8,7 +8,7 @@ namespace SriMuniEngineering_Api.Features.Invoices;
 public static class InvoicePdfGenerator
 {
     private static readonly string LogoPath = Path.Combine(
-        AppContext.BaseDirectory, "Assets", "sme-logo.png");
+        AppContext.BaseDirectory, "Assets", "svi-logo.png");
 
     /// <summary>
     /// Generates the invoice PDF that is uploaded to storage.
@@ -71,22 +71,20 @@ public static class InvoicePdfGenerator
             col.Item().Row(row =>
             {
                 // Logo on the left side of header
+                var leftCol = row.ConstantItem(120).AlignLeft().AlignMiddle();
                 if (File.Exists(LogoPath))
                 {
-                    row.ConstantItem(50).AlignMiddle().Image(LogoPath);
+                    leftCol.Width(60).Image(LogoPath); // Slightly increased width to 60 for better visibility
                 }
 
-                row.RelativeItem().AlignCenter().Column(c =>
-                {
-                    c.Item().AlignCenter().Text("TAX INVOICE").Bold().FontSize(14);
-                    if (!string.IsNullOrEmpty(copyLabel))
-                    {
-                        c.Item().AlignCenter().Text($"({copyLabel})").FontSize(8).Italic();
-                    }
-                });
+                row.RelativeItem().AlignCenter().AlignMiddle().Text("TAX INVOICE").Bold().FontSize(14);
 
-                // Spacer to balance the logo width
-                row.ConstantItem(50);
+                // Copy label on the right side
+                var rightCol = row.ConstantItem(120).AlignRight().AlignTop();
+                if (!string.IsNullOrEmpty(copyLabel))
+                {
+                    rightCol.Text(copyLabel).FontSize(8).Bold();
+                }
             });
             col.Item().PaddingBottom(5).LineHorizontal(1);
         });
@@ -149,7 +147,7 @@ public static class InvoicePdfGenerator
             });
 
             // Items Table with inline GST
-            column.Item().PaddingTop(5).Table(table =>
+            column.Item().PaddingTop(5).ExtendVertical().Table(table =>
             {
                 table.ColumnsDefinition(columns =>
                 {
@@ -241,6 +239,12 @@ public static class InvoicePdfGenerator
                     table.Cell().Border(1).Padding(2).AlignRight().Text(item.Amount.ToString("N2")).FontSize(7);
 
                     slNo++;
+                }
+
+                // Filler row for stretching
+                for (int i = 0; i < 11; i++)
+                {
+                    table.Cell().BorderLeft(1).BorderRight(1).ExtendVertical();
                 }
 
                 // Total row
@@ -350,7 +354,7 @@ public static class InvoicePdfGenerator
             column.Item().PaddingTop(3).Text($"Tax Amount (in words): {invoice.AmountInWords}").FontSize(8).Italic();
 
             // Bank Details & Declaration
-            column.Item().ExtendVertical().AlignBottom().PaddingTop(10).Row(row =>
+            column.Item().PaddingTop(10).Row(row =>
             {
                 row.RelativeItem().Column(col =>
                 {
