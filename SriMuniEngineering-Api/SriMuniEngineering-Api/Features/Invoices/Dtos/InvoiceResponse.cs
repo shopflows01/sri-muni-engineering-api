@@ -36,6 +36,7 @@ public class InvoiceItemResponse
     public string HsnSac { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? HsnCode { get; set; }
     public decimal Quantity { get; set; }
     public decimal Rate { get; set; }
     public decimal Discount { get; set; }

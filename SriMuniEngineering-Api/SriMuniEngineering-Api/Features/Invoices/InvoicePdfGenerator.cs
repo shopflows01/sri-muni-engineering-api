@@ -202,7 +202,7 @@ public static class InvoicePdfGenerator
                         if (!string.IsNullOrEmpty(item.Description))
                             col.Item().Text(item.Description).FontSize(6).Italic();
                     });
-                    table.Cell().Border(1).Padding(2).AlignCenter().Text(item.Product.HsnSac).FontSize(7);
+                    table.Cell().Border(1).Padding(2).AlignCenter().Text(item.HsnCode ?? item.Product.HsnSac).FontSize(7);
                     table.Cell().Border(1).Padding(2).AlignCenter().Text($"{item.Quantity:F0} {item.Product.Unit}").FontSize(7);
                     table.Cell().Border(1).Padding(2).AlignRight().Text(item.Rate.ToString("F2")).FontSize(7);
                     table.Cell().Border(1).Padding(2).AlignCenter().Text(item.Product.Unit).FontSize(7);
@@ -257,7 +257,7 @@ public static class InvoicePdfGenerator
 
             // Tax Summary Table - Breakdown by GST rate
             var taxGroups = invoice.Items
-                .GroupBy(i => new { i.GSTPercent, i.Product.HsnSac })
+                .GroupBy(i => new { i.GSTPercent, HsnSac = i.HsnCode ?? i.Product.HsnSac })
                 .Select(g => new
                 {
                     g.Key.HsnSac,

@@ -6,6 +6,7 @@ public class InvoiceItem
     public Guid InvoiceId { get; set; }
     public Guid ProductId { get; set; }
     public string? Description { get; set; }
+    public string? HsnCode { get; set; }
     public decimal Quantity { get; set; }
     public decimal Rate { get; set; }
     public decimal Discount { get; set; }

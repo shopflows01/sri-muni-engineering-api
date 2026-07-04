@@ -32,6 +32,8 @@ public class CreateInvoiceItemRequest
 
     public string? Description { get; set; }
 
+    public string? HsnCode { get; set; }
+
     [Required]
     [Range(0.01, double.MaxValue)]
     public decimal Quantity { get; set; }
