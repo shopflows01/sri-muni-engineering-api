@@ -30,6 +30,7 @@ public class ProductInfoDto
     public string Unit { get; set; } = string.Empty;
     public decimal SellingPrice { get; set; }
     public string HsnSac { get; set; } = string.Empty;
+    public List<ProductCustomerDto> Customers { get; set; } = [];
 }
 
 public class ProductionSummaryDto

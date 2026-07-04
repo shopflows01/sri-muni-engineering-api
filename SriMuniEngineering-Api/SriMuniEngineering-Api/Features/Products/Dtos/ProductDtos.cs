@@ -40,4 +40,11 @@ public class ProductResponse
     public string Unit { get; set; } = string.Empty;
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
+    public List<ProductCustomerDto> Customers { get; set; } = [];
+}
+
+public class ProductCustomerDto
+{
+    public Guid CustomerId { get; set; }
+    public string CustomerName { get; set; } = string.Empty;
 }

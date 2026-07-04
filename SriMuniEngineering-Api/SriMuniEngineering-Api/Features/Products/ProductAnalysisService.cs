@@ -61,7 +61,11 @@ public class ProductAnalysisService
                 CurrentStock = currentStock,
                 Unit = product.Unit,
                 SellingPrice = product.BasePricePerUnit,
-                HsnSac = product.HsnSac
+                HsnSac = product.HsnSac,
+                Customers = ledgers
+                    .Select(l => new ProductCustomerDto { CustomerId = l.Customer.Id, CustomerName = l.Customer.Name })
+                    .DistinctBy(c => c.CustomerId)
+                    .ToList()
             },
 
             ProductionSummary = new ProductionSummaryDto

@@ -106,7 +106,7 @@ public static class InvoicePdfGenerator
                     col.Item().Text($"{company["Address1"]}").FontSize(8);
                     col.Item().Text($"{company["Address2"]}").FontSize(8);
                     col.Item().Text($"{company["City"]} - {company["Pincode"]}").FontSize(8);
-                    col.Item().Text($"GSTIN/UIN: {company["Gstin"]}").FontSize(8);
+                    col.Item().Text($"GSTIN/UIN: {company["Gstin"]?.ToUpper()}").FontSize(8);
                     col.Item().Text($"State Name: {company["State"]}, Code: {company["StateCode"]}").FontSize(8);
                     col.Item().Text($"Contact: {company["Phone"]}, {company["AltPhone"]}").FontSize(8);
                     col.Item().Text($"E-Mail: {company["Email"]}").FontSize(8);
@@ -144,7 +144,7 @@ public static class InvoicePdfGenerator
                 col.Item().Text("Buyer (Bill To)").FontSize(8).Italic();
                 col.Item().Text(invoice.Customer.Name).Bold().FontSize(9);
                 col.Item().Text(invoice.Customer.BillingAddress).FontSize(8);
-                col.Item().Text($"GSTIN/UIN: {invoice.Customer.GSTIN}").FontSize(8);
+                col.Item().Text($"GSTIN/UIN: {invoice.Customer.GSTIN.ToUpper()}").FontSize(8);
                 col.Item().Text($"State Name: {invoice.Customer.StateName}, Code: {invoice.Customer.StateCode}").FontSize(8);
             });
 
