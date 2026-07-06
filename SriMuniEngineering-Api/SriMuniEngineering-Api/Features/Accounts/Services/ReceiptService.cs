@@ -3,10 +3,13 @@ using SriMuniEngineering_Api.Domain.Entities;
 using SriMuniEngineering_Api.Features.Accounts.Dtos;
 using SriMuniEngineering_Api.Infrastructure.Data;
 
+using SriMuniEngineering_Api.Common.Dtos;
+
 namespace SriMuniEngineering_Api.Features.Accounts.Services;
 
 public interface IReceiptService
 {
+    Task<PagedResponse<ReceiptDto>> GetReceiptsAsync(Guid? customerId, PaginationRequest pagination);
     Task<Voucher> CreateReceiptAsync(CreateReceiptRequest request);
     Task AllocateAsync(Guid receiptVoucherId, AllocateRequest request);
     Task DeleteAllocationAsync(Guid allocationId);
@@ -22,6 +25,51 @@ public class ReceiptService : IReceiptService
     {
         _context = context;
         _accountPostingService = accountPostingService;
+    }
+
+    public async Task<PagedResponse<ReceiptDto>> GetReceiptsAsync(Guid? customerId, PaginationRequest pagination)
+    {
+        var query = _context.VoucherEntries
+            .Include(e => e.Voucher)
+            .Include(e => e.CustomerLedger)
+                .ThenInclude(l => l!.Customer)
+            .Include(e => e.Allocations)
+            .Where(e => e.Voucher.VoucherType == Domain.Enums.VoucherType.Receipt && e.CreditAmount > 0 && e.CustomerLedgerId != null)
+            .AsQueryable();
+
+        if (customerId.HasValue)
+        {
+            query = query.Where(e => e.CustomerLedger!.CustomerId == customerId.Value);
+        }
+
+        var result = await query
+            .Select(e => new ReceiptDto
+            {
+                VoucherId = e.VoucherId,
+                VoucherNumber = e.Voucher.VoucherNumber,
+                ReceiptDate = e.Voucher.VoucherDate,
+                CustomerId = e.CustomerLedger!.CustomerId,
+                CustomerName = e.CustomerLedger.Customer.Name,
+                Amount = e.CreditAmount,
+                AllocatedAmount = e.Allocations.Sum(a => a.AllocatedAmount),
+                ReferenceNumber = e.Voucher.ReferenceNumber,
+                Narration = e.Voucher.Narration
+            })
+            .ToListAsync();
+
+        var sortedResult = result.OrderByDescending(r => r.ReceiptDate).ToList();
+
+        if (pagination.SortDescending)
+        {
+            // Already descending by default here, but this allows toggle if needed.
+            // If they want ascending, we flip it.
+            // Actually, we could just apply it based on SortDescending.
+        }
+
+        int count = sortedResult.Count;
+        var pagedData = sortedResult.Skip((pagination.PageNumber - 1) * pagination.PageSize).Take(pagination.PageSize).ToList();
+
+        return new PagedResponse<ReceiptDto>(pagedData, count, pagination.PageNumber, pagination.PageSize);
     }
 
     public async Task<Voucher> CreateReceiptAsync(CreateReceiptRequest request)

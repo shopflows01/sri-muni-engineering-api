@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SriMuniEngineering_Api.Common.Dtos;
 using SriMuniEngineering_Api.Features.Accounts.Dtos;
 using SriMuniEngineering_Api.Features.Accounts.Services;
 
@@ -13,6 +14,13 @@ public class ReceiptsController : ControllerBase
     public ReceiptsController(IReceiptService receiptService)
     {
         _receiptService = receiptService;
+    }
+
+    [HttpGet("receipts")]
+    public async Task<IActionResult> GetReceipts([FromQuery] Guid? customerId, [FromQuery] PaginationRequest pagination)
+    {
+        var result = await _receiptService.GetReceiptsAsync(customerId, pagination);
+        return Ok(result);
     }
 
     [HttpPost("receipts")]
