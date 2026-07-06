@@ -28,7 +28,7 @@ public class AccountsDashboardService : IAccountsDashboardService
     public async Task<InvoiceSummaryDto> GetInvoiceSummaryAsync()
     {
         var allInvoicesPaged = await _invoiceStatusService.GetInvoicesByStatusAsync(null, null, new PaginationRequest { PageSize = int.MaxValue });
-        var allInvoices = allInvoicesPaged.Data.ToList();
+        var allInvoices = allInvoicesPaged.Items.ToList();
 
         return new InvoiceSummaryDto
         {
@@ -45,7 +45,7 @@ public class AccountsDashboardService : IAccountsDashboardService
     {
         var customers = await _context.Customers.ToListAsync();
         var allInvoicesPaged = await _invoiceStatusService.GetInvoicesByStatusAsync(null, null, new PaginationRequest { PageSize = int.MaxValue });
-        var allInvoices = allInvoicesPaged.Data.ToList();
+        var allInvoices = allInvoicesPaged.Items.ToList();
 
         // Calculate advance balances for all customers
         var receiptCredits = await _context.VoucherEntries
@@ -97,7 +97,7 @@ public class AccountsDashboardService : IAccountsDashboardService
         return new CustomerOutstandingDetailDto
         {
             CustomerId = customerId,
-            Invoices = invoicesPaged.Data.ToList()
+            Invoices = invoicesPaged.Items.ToList()
         };
     }
 }

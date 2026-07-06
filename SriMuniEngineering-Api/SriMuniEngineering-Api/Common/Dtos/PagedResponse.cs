@@ -2,7 +2,7 @@ namespace SriMuniEngineering_Api.Common.Dtos;
 
 public class PagedResponse<T>
 {
-    public IEnumerable<T> Data { get; set; } = [];
+    public IEnumerable<T> Items { get; set; } = [];
     public int PageNumber { get; set; }
     public int PageSize { get; set; }
     public int TotalCount { get; set; }
@@ -10,9 +10,9 @@ public class PagedResponse<T>
 
     public PagedResponse() { }
 
-    public PagedResponse(IEnumerable<T> data, int count, int pageNumber, int pageSize)
+    public PagedResponse(IEnumerable<T> items, int count, int pageNumber, int pageSize)
     {
-        Data = data;
+        Items = items;
         TotalCount = count;
         PageNumber = pageNumber;
         PageSize = pageSize;
