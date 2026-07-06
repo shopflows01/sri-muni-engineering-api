@@ -58,7 +58,7 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Invalid token." });
 
         var expiry = string.IsNullOrEmpty(exp)
-            ? DateTime.UtcNow.AddHours(8)
+            ? DateTime.Now.AddHours(8)
             : DateTimeOffset.FromUnixTimeSeconds(long.Parse(exp)).UtcDateTime;
 
         _authService.Logout(jti, expiry);

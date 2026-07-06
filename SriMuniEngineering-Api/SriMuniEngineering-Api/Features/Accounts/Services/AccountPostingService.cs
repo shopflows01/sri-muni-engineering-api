@@ -24,13 +24,13 @@ public class AccountPostingService
             Id = Guid.NewGuid(),
             VoucherNumber = $"SV-{invoiceNo}",
             VoucherType = VoucherType.Sales,
-            VoucherDate = DateTime.UtcNow,
+            VoucherDate = DateTime.Now,
             ReferenceNumber = invoiceNo,
             Narration = $"Sales Invoice {invoiceNo}",
             Status = VoucherStatus.Posted,
             CreatedBy = "System",
-            CreatedDate = DateTime.UtcNow,
-            ModifiedDate = DateTime.UtcNow
+            CreatedDate = DateTime.Now,
+            ModifiedDate = DateTime.Now
         };
 
         // Entry 1: Debit Customer Ledger
@@ -69,7 +69,7 @@ public class AccountPostingService
         var ledger = await GetOrCreateCustomerLedgerAsync(customerId);
 
         // Generate Voucher Number
-        var today = DateTime.UtcNow.Date;
+        var today = DateTime.Now.Date;
         var count = await _context.Vouchers.CountAsync(v => v.VoucherType == VoucherType.Receipt && v.VoucherDate.Date == today);
         var voucherNo = $"RV-{today:yyyyMMdd}-{(count + 1):D3}";
 
@@ -83,8 +83,8 @@ public class AccountPostingService
             Narration = narration ?? "Payment Received",
             Status = VoucherStatus.Posted,
             CreatedBy = "System",
-            CreatedDate = DateTime.UtcNow,
-            ModifiedDate = DateTime.UtcNow
+            CreatedDate = DateTime.Now,
+            ModifiedDate = DateTime.Now
         };
 
         // Entry 1: Credit Customer Ledger

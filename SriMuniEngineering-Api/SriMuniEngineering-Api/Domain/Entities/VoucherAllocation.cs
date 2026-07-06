@@ -6,7 +6,7 @@ public class VoucherAllocation
     public Guid VoucherEntryId { get; set; }
     public Guid InvoiceId { get; set; }
     public decimal AllocatedAmount { get; set; }
-    public DateTime AllocationDate { get; set; } = DateTime.UtcNow;
+    public DateTime AllocationDate { get; set; } = DateTime.Now;
     public string? Remarks { get; set; }
 
     // Navigation properties

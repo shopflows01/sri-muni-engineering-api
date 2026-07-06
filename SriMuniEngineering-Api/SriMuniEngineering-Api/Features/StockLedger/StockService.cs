@@ -33,7 +33,7 @@ public class StockService
             OutwardQty = 0,
             RejectedQty = 0,
             Status = LedgerStatus.InProgress,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         _context.JobWorkLedgers.Add(ledger);
@@ -164,9 +164,9 @@ public class StockService
     public async Task<string> ExportToExcelAsync(StockExportQuery query, string baseUrl)
     {
         var fromDate = query.FromDate ?? (query.Period == "weekly"
-            ? DateTime.UtcNow.AddDays(-7)
-            : DateTime.UtcNow.AddMonths(-1));
-        var toDate = query.ToDate ?? DateTime.UtcNow;
+            ? DateTime.Now.AddDays(-7)
+            : DateTime.Now.AddMonths(-1));
+        var toDate = query.ToDate ?? DateTime.Now;
 
         var ledgers = await _context.JobWorkLedgers
             .Include(l => l.Customer)
@@ -223,7 +223,7 @@ public class StockService
         var bytes = stream.ToArray();
 
         // Upload to Supabase
-        var fileName = $"StockReport_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
+        var fileName = $"StockReport_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         await _storageService.UploadFileAsync(
             "reports", fileName, bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 

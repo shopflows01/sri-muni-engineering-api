@@ -15,7 +15,7 @@ public class Quotation
     public decimal EstimatedCostPerPart { get; set; }
     public decimal GstRate { get; set; }
     public string? StoredFilePath { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Navigation properties
     public Customer Customer { get; set; } = null!;

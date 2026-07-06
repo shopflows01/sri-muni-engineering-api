@@ -39,7 +39,7 @@ public class AuthService
             Email = request.Email,
             Role = request.Role,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         _context.Users.Add(user);

@@ -107,7 +107,7 @@ public class InvoiceService
             AsnNo = request.AsnNo,
             EwbNo = request.EwbNo,
             Items = invoiceItems,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         _context.Invoices.Add(invoice);

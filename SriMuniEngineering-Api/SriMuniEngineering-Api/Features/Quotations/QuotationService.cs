@@ -40,7 +40,7 @@ public class QuotationService
             ProcessCostTotal = processCostTotal,
             EstimatedCostPerPart = request.EstimatedCostPerPart,
             GstRate = request.GstRate,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         _context.Quotations.Add(quotation);

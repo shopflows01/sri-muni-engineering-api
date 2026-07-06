@@ -34,7 +34,7 @@ public class HealthController : ControllerBase
         var response = new
         {
             Status = status,
-            Timestamp = DateTime.UtcNow,
+            Timestamp = DateTime.Now,
             Dependencies = new
             {
                 Database = sqlConnected ? "Connected" : "Disconnected",

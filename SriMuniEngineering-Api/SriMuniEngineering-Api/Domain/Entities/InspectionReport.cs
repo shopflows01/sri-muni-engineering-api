@@ -24,7 +24,7 @@ public class InspectionReport
     public string? InspectedBy { get; set; }
     public string? ApprovedBy { get; set; }
     public string? StoredFilePath { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Navigation properties
     public Invoice? Invoice { get; set; }

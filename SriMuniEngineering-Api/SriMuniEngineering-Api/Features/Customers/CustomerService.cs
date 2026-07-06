@@ -111,7 +111,7 @@ public class CustomerService
             ?? throw new KeyNotFoundException($"Customer with ID {id} not found.");
 
         customer.IsDeleted = true;
-        customer.DeletedAt = DateTime.UtcNow;
+        customer.DeletedAt = DateTime.Now;
         await _context.SaveChangesAsync();
     }
 

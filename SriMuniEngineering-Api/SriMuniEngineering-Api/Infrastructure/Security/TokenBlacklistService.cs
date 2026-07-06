@@ -19,7 +19,7 @@ public class TokenBlacklistService
 
     private void CleanupExpiredEntries()
     {
-        var now = DateTime.UtcNow;
+        var now = DateTime.Now;
         var expiredKeys = _blacklistedTokens
             .Where(kvp => kvp.Value < now)
             .Select(kvp => kvp.Key)

@@ -152,7 +152,7 @@ public class ReceiptService : IReceiptService
                 VoucherEntryId = creditEntry.Id,
                 InvoiceId = alloc.InvoiceId,
                 AllocatedAmount = alloc.Amount,
-                AllocationDate = DateTime.UtcNow,
+                AllocationDate = DateTime.Now,
                 Remarks = "Late Allocation"
             });
         }

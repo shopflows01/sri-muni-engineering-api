@@ -108,7 +108,7 @@ public class ProductService
             ?? throw new KeyNotFoundException($"Product with ID {id} not found.");
 
         product.IsDeleted = true;
-        product.DeletedAt = DateTime.UtcNow;
+        product.DeletedAt = DateTime.Now;
         await _context.SaveChangesAsync();
     }
 

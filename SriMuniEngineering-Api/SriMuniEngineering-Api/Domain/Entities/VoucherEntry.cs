@@ -11,7 +11,7 @@ public class VoucherEntry
     public decimal DebitAmount { get; set; }
     public decimal CreditAmount { get; set; }
     public string? Remarks { get; set; }
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
 
     // Navigation properties
     public Voucher Voucher { get; set; } = null!;

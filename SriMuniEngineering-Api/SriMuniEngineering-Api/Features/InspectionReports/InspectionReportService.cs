@@ -47,7 +47,7 @@ public class InspectionReportService
             CieResult = request.CieResult,
             InspectedBy = request.InspectedBy,
             ApprovedBy = request.ApprovedBy,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         _context.InspectionReports.Add(report);

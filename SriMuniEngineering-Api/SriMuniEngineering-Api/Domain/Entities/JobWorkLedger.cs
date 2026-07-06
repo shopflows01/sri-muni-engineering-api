@@ -13,7 +13,7 @@ public class JobWorkLedger
     public int OutwardQty { get; set; }
     public int RejectedQty { get; set; }
     public LedgerStatus Status { get; set; } = LedgerStatus.InProgress;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Navigation properties
     public Customer Customer { get; set; } = null!;

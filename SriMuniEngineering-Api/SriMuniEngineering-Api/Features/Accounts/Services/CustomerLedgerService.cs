@@ -146,7 +146,7 @@ public class CustomerLedgerService : ICustomerLedgerService
             OpeningBalance = request.OpeningBalance,
             OpeningBalanceType = request.OpeningBalanceType,
             IsActive = true,
-            CreatedDate = DateTime.UtcNow
+            CreatedDate = DateTime.Now
         };
 
         _context.CustomerLedgers.Add(ledger);

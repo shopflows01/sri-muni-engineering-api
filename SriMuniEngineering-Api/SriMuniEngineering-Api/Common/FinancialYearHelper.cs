@@ -30,10 +30,10 @@ public static class FinancialYearHelper
     }
 
     /// <summary>
-    /// Returns the financial year string for the current UTC date.
+    /// Returns the financial year string for the current local date.
     /// </summary>
     public static string GetCurrentFinancialYear()
     {
-        return GetFinancialYear(DateTime.UtcNow);
+        return GetFinancialYear(DateTime.Now);
     }
 }

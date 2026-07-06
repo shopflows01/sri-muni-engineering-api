@@ -10,8 +10,8 @@ public class CustomerLedger
     public decimal OpeningBalance { get; set; }
     public BalanceType OpeningBalanceType { get; set; }
     public bool IsActive { get; set; } = true;
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-    public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
+    public DateTime ModifiedDate { get; set; } = DateTime.Now;
 
     // Navigation properties
     public Customer Customer { get; set; } = null!;

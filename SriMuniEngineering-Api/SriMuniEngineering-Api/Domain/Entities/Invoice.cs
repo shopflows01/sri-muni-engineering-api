@@ -22,7 +22,7 @@ public class Invoice
     public string? AsnNo { get; set; }
     public string? EwbNo { get; set; }
     public string? StoredFilePath { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Navigation properties
     public Customer Customer { get; set; } = null!;
