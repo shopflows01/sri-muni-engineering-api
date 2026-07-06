@@ -17,6 +17,11 @@ public class AppDbContext : DbContext
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<InspectionReport> InspectionReports => Set<InspectionReport>();
 
+    public DbSet<CustomerLedger> CustomerLedgers => Set<CustomerLedger>();
+    public DbSet<Voucher> Vouchers => Set<Voucher>();
+    public DbSet<VoucherEntry> VoucherEntries => Set<VoucherEntry>();
+    public DbSet<VoucherAllocation> VoucherAllocations => Set<VoucherAllocation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -193,6 +198,71 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.Product)
                 .WithMany(p => p.InspectionReports)
                 .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── CustomerLedger ───────────────────────────────────
+        modelBuilder.Entity<CustomerLedger>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.CustomerId).IsUnique();
+            entity.Property(e => e.OpeningBalance).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.OpeningBalanceType).HasConversion<int>();
+
+            entity.HasOne(e => e.Customer)
+                .WithOne()
+                .HasForeignKey<CustomerLedger>(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── Voucher ─────────────────────────────────────────
+        modelBuilder.Entity<Voucher>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.VoucherNumber).IsUnique();
+            entity.Property(e => e.VoucherNumber).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.VoucherType).HasConversion<int>();
+            entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.ReferenceNumber).HasMaxLength(100);
+            entity.Property(e => e.Narration).HasMaxLength(500);
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+        });
+
+        // ─── VoucherEntry ────────────────────────────────────
+        modelBuilder.Entity<VoucherEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DebitAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.CreditAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Remarks).HasMaxLength(500);
+            entity.Property(e => e.SystemAccount).HasConversion<int>();
+
+            entity.HasOne(e => e.Voucher)
+                .WithMany(v => v.Entries)
+                .HasForeignKey(e => e.VoucherId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.CustomerLedger)
+                .WithMany(l => l.VoucherEntries)
+                .HasForeignKey(e => e.CustomerLedgerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── VoucherAllocation ───────────────────────────────
+        modelBuilder.Entity<VoucherAllocation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.AllocatedAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Remarks).HasMaxLength(500);
+
+            entity.HasOne(e => e.VoucherEntry)
+                .WithMany(ve => ve.Allocations)
+                .HasForeignKey(e => e.VoucherEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Invoice)
+                .WithMany()
+                .HasForeignKey(e => e.InvoiceId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

@@ -12,12 +12,18 @@ public class InvoiceService
     private readonly AppDbContext _context;
     private readonly SupabaseStorageService _storageService;
     private readonly IConfiguration _configuration;
+    private readonly Accounts.Services.AccountPostingService _accountPostingService;
 
-    public InvoiceService(AppDbContext context, SupabaseStorageService storageService, IConfiguration configuration)
+    public InvoiceService(
+        AppDbContext context, 
+        SupabaseStorageService storageService, 
+        IConfiguration configuration,
+        Accounts.Services.AccountPostingService accountPostingService)
     {
         _context = context;
         _storageService = storageService;
         _configuration = configuration;
+        _accountPostingService = accountPostingService;
     }
 
     // ─── Next Invoice Number Preview ─────────────────────────────
@@ -106,6 +112,9 @@ public class InvoiceService
 
         _context.Invoices.Add(invoice);
         await _context.SaveChangesAsync();
+
+        // ─── Post to Accounting Ledger ──────────────────────────────
+        await _accountPostingService.PostSalesInvoiceAsync(invoice.Id, invoice.CustomerId, invoice.GrandTotal, invoice.InvoiceNo);
 
         return await GetByIdAsync(invoice.Id);
     }

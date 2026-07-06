@@ -14,6 +14,7 @@ using SriMuniEngineering_Api.Features.InspectionReports;
 using SriMuniEngineering_Api.Features.Invoices;
 using SriMuniEngineering_Api.Features.Quotations;
 using SriMuniEngineering_Api.Features.StockLedger;
+using SriMuniEngineering_Api.Features.Accounts.Services;
 using SriMuniEngineering_Api.Infrastructure.Data;
 using SriMuniEngineering_Api.Infrastructure.Email;
 using SriMuniEngineering_Api.Infrastructure.Security;
@@ -86,6 +87,13 @@ builder.Services.AddScoped<QuotationService>();
 builder.Services.AddScoped<InvoiceService>();
 builder.Services.AddScoped<InspectionReportService>();
 builder.Services.AddScoped<EWayBillService>();
+
+// ─── Accounts Services ────────────────────────────────────────────
+builder.Services.AddScoped<AccountPostingService>();
+builder.Services.AddScoped<ICustomerLedgerService, CustomerLedgerService>();
+builder.Services.AddScoped<IReceiptService, ReceiptService>();
+builder.Services.AddScoped<IInvoiceStatusService, InvoiceStatusService>();
+builder.Services.AddScoped<IAccountsDashboardService, AccountsDashboardService>();
 
 // ─── Supabase Storage HttpClient ──────────────────────────────────
 builder.Services.AddHttpClient<SupabaseStorageService>();

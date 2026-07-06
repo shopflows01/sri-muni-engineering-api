@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SriMuniEngineering_Api.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using SriMuniEngineering_Api.Infrastructure.Data;
 namespace SriMuniEngineering_Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260706153314_AddAccountingModule")]
+    partial class AddAccountingModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -104,10 +107,6 @@ namespace SriMuniEngineering_Api.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
-
-                    b.Property<string>("LedgerNo")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -662,25 +661,22 @@ namespace SriMuniEngineering_Api.Migrations
                     b.Property<decimal>("CreditAmount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<Guid?>("CustomerLedgerId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal>("DebitAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("LedgerId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Remarks")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<int?>("SystemAccount")
-                        .HasColumnType("int");
 
                     b.Property<Guid>("VoucherId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CustomerLedgerId");
+                    b.HasIndex("LedgerId");
 
                     b.HasIndex("VoucherId");
 
@@ -821,9 +817,9 @@ namespace SriMuniEngineering_Api.Migrations
 
             modelBuilder.Entity("SriMuniEngineering_Api.Domain.Entities.VoucherEntry", b =>
                 {
-                    b.HasOne("SriMuniEngineering_Api.Domain.Entities.CustomerLedger", "CustomerLedger")
+                    b.HasOne("SriMuniEngineering_Api.Domain.Entities.CustomerLedger", "Ledger")
                         .WithMany("VoucherEntries")
-                        .HasForeignKey("CustomerLedgerId")
+                        .HasForeignKey("LedgerId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SriMuniEngineering_Api.Domain.Entities.Voucher", "Voucher")
@@ -832,7 +828,7 @@ namespace SriMuniEngineering_Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CustomerLedger");
+                    b.Navigation("Ledger");
 
                     b.Navigation("Voucher");
                 });
