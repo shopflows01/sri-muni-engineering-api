@@ -2,12 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using SriMuniEngineering_Api.Features.Accounts.Dtos;
 using SriMuniEngineering_Api.Infrastructure.Data;
 
+using SriMuniEngineering_Api.Common.Dtos;
+
 namespace SriMuniEngineering_Api.Features.Accounts.Services;
 
 public interface IInvoiceStatusService
 {
     Task<InvoiceStatusDto> GetStatusAsync(Guid invoiceId);
-    Task<List<InvoiceStatusDto>> GetInvoicesByStatusAsync(Guid? customerId, string? status);
+    Task<PagedResponse<InvoiceStatusDto>> GetInvoicesByStatusAsync(Guid? customerId, string? status, PaginationRequest pagination);
 }
 
 public class InvoiceStatusService : IInvoiceStatusService
@@ -43,7 +45,7 @@ public class InvoiceStatusService : IInvoiceStatusService
         };
     }
 
-    public async Task<List<InvoiceStatusDto>> GetInvoicesByStatusAsync(Guid? customerId, string? status)
+    public async Task<PagedResponse<InvoiceStatusDto>> GetInvoicesByStatusAsync(Guid? customerId, string? status, PaginationRequest pagination)
     {
         var query = _context.Invoices.AsQueryable();
 
@@ -85,6 +87,11 @@ public class InvoiceStatusService : IInvoiceStatusService
             result = result.Where(r => r.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
         }
 
-        return result.OrderByDescending(r => r.InvoiceDate).ToList();
+        var sortedResult = result.OrderByDescending(r => r.InvoiceDate).ToList();
+        
+        int count = sortedResult.Count;
+        var pagedData = sortedResult.Skip((pagination.PageNumber - 1) * pagination.PageSize).Take(pagination.PageSize).ToList();
+
+        return new PagedResponse<InvoiceStatusDto>(pagedData, count, pagination.PageNumber, pagination.PageSize);
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SriMuniEngineering_Api.Common.Dtos;
 using SriMuniEngineering_Api.Features.Accounts.Services;
 
 namespace SriMuniEngineering_Api.Features.Accounts.Controllers;
@@ -22,9 +23,9 @@ public class AccountsDashboardController : ControllerBase
     }
 
     [HttpGet("customer-outstanding")]
-    public async Task<IActionResult> GetCustomerOutstanding()
+    public async Task<IActionResult> GetCustomerOutstanding([FromQuery] PaginationRequest pagination)
     {
-        var result = await _dashboardService.GetCustomerOutstandingAsync();
+        var result = await _dashboardService.GetCustomerOutstandingAsync(pagination);
         return Ok(result);
     }
 

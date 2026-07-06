@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SriMuniEngineering_Api.Common.Dtos;
 using SriMuniEngineering_Api.Features.Accounts.Services;
 
 namespace SriMuniEngineering_Api.Features.Accounts.Controllers;
@@ -15,9 +16,9 @@ public class InvoiceStatusController : ControllerBase
     }
 
     [HttpGet("status")]
-    public async Task<IActionResult> GetInvoicesByStatus([FromQuery] Guid? customerId, [FromQuery] string? status)
+    public async Task<IActionResult> GetInvoicesByStatus([FromQuery] Guid? customerId, [FromQuery] string? status, [FromQuery] PaginationRequest pagination)
     {
-        var result = await _invoiceStatusService.GetInvoicesByStatusAsync(customerId, status);
+        var result = await _invoiceStatusService.GetInvoicesByStatusAsync(customerId, status, pagination);
         return Ok(result);
     }
 

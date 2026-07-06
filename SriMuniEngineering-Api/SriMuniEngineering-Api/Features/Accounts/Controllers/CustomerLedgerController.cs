@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SriMuniEngineering_Api.Common.Dtos;
 using SriMuniEngineering_Api.Features.Accounts.Dtos;
 using SriMuniEngineering_Api.Features.Accounts.Services;
 
@@ -16,11 +17,11 @@ public class CustomerLedgerController : ControllerBase
     }
 
     [HttpGet("{customerId}/ledger")]
-    public async Task<IActionResult> GetLedger(Guid customerId)
+    public async Task<IActionResult> GetLedger(Guid customerId, [FromQuery] PaginationRequest pagination)
     {
         try
         {
-            var result = await _ledgerService.GetLedgerAsync(customerId);
+            var result = await _ledgerService.GetLedgerAsync(customerId, pagination);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

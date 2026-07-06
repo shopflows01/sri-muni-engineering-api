@@ -3,11 +3,13 @@ using SriMuniEngineering_Api.Domain.Enums;
 using SriMuniEngineering_Api.Features.Accounts.Dtos;
 using SriMuniEngineering_Api.Infrastructure.Data;
 
+using SriMuniEngineering_Api.Common.Dtos;
+
 namespace SriMuniEngineering_Api.Features.Accounts.Services;
 
 public interface ICustomerLedgerService
 {
-    Task<CustomerLedgerDto> GetLedgerAsync(Guid customerId);
+    Task<CustomerLedgerDto> GetLedgerAsync(Guid customerId, PaginationRequest pagination);
     Task<decimal> GetOutstandingAsync(Guid customerId);
     Task<decimal> GetAdvanceBalanceAsync(Guid customerId);
     Task<CustomerLedgerDto> CreateLedgerAsync(Guid customerId, CreateCustomerLedgerRequest request);
@@ -22,7 +24,7 @@ public class CustomerLedgerService : ICustomerLedgerService
         _context = context;
     }
 
-    public async Task<CustomerLedgerDto> GetLedgerAsync(Guid customerId)
+    public async Task<CustomerLedgerDto> GetLedgerAsync(Guid customerId, PaginationRequest pagination)
     {
         var ledger = await _context.CustomerLedgers
             .Include(l => l.Customer)
@@ -43,7 +45,7 @@ public class CustomerLedgerService : ICustomerLedgerService
                 OpeningBalance = 0,
                 OpeningBalanceType = BalanceType.Debit.ToString(),
                 CurrentBalance = 0,
-                Entries = new List<LedgerEntryDto>()
+                Entries = new PagedResponse<LedgerEntryDto>()
             };
         }
 
@@ -71,6 +73,17 @@ public class CustomerLedgerService : ICustomerLedgerService
                 };
             }).ToList();
 
+        decimal finalBalance = runningBalance;
+
+        if (pagination.SortDescending)
+        {
+            entries.Reverse();
+        }
+
+        int count = entries.Count;
+        var pagedData = entries.Skip((pagination.PageNumber - 1) * pagination.PageSize).Take(pagination.PageSize).ToList();
+        var pagedEntries = new PagedResponse<LedgerEntryDto>(pagedData, count, pagination.PageNumber, pagination.PageSize);
+
         return new CustomerLedgerDto
         {
             CustomerId = customerId,
@@ -78,8 +91,8 @@ public class CustomerLedgerService : ICustomerLedgerService
             CustomerName = ledger.Customer.Name,
             OpeningBalance = ledger.OpeningBalance,
             OpeningBalanceType = ledger.OpeningBalanceType.ToString(),
-            CurrentBalance = runningBalance,
-            Entries = entries
+            CurrentBalance = finalBalance,
+            Entries = pagedEntries
         };
     }
 
@@ -139,6 +152,6 @@ public class CustomerLedgerService : ICustomerLedgerService
         _context.CustomerLedgers.Add(ledger);
         await _context.SaveChangesAsync();
 
-        return await GetLedgerAsync(customerId);
+        return await GetLedgerAsync(customerId, new PaginationRequest { PageSize = int.MaxValue });
     }
 }

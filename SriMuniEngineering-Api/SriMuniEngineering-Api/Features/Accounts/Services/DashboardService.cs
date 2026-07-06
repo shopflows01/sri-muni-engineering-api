@@ -3,12 +3,14 @@ using SriMuniEngineering_Api.Domain.Enums;
 using SriMuniEngineering_Api.Features.Accounts.Dtos;
 using SriMuniEngineering_Api.Infrastructure.Data;
 
+using SriMuniEngineering_Api.Common.Dtos;
+
 namespace SriMuniEngineering_Api.Features.Accounts.Services;
 
 public interface IAccountsDashboardService
 {
     Task<InvoiceSummaryDto> GetInvoiceSummaryAsync();
-    Task<List<CustomerOutstandingDto>> GetCustomerOutstandingAsync();
+    Task<PagedResponse<CustomerOutstandingDto>> GetCustomerOutstandingAsync(PaginationRequest pagination);
     Task<CustomerOutstandingDetailDto> GetCustomerOutstandingDetailAsync(Guid customerId);
 }
 
@@ -25,7 +27,8 @@ public class AccountsDashboardService : IAccountsDashboardService
 
     public async Task<InvoiceSummaryDto> GetInvoiceSummaryAsync()
     {
-        var allInvoices = await _invoiceStatusService.GetInvoicesByStatusAsync(null, null);
+        var allInvoicesPaged = await _invoiceStatusService.GetInvoicesByStatusAsync(null, null, new PaginationRequest { PageSize = int.MaxValue });
+        var allInvoices = allInvoicesPaged.Data.ToList();
 
         return new InvoiceSummaryDto
         {
@@ -38,10 +41,11 @@ public class AccountsDashboardService : IAccountsDashboardService
         };
     }
 
-    public async Task<List<CustomerOutstandingDto>> GetCustomerOutstandingAsync()
+    public async Task<PagedResponse<CustomerOutstandingDto>> GetCustomerOutstandingAsync(PaginationRequest pagination)
     {
         var customers = await _context.Customers.ToListAsync();
-        var allInvoices = await _invoiceStatusService.GetInvoicesByStatusAsync(null, null);
+        var allInvoicesPaged = await _invoiceStatusService.GetInvoicesByStatusAsync(null, null, new PaginationRequest { PageSize = int.MaxValue });
+        var allInvoices = allInvoicesPaged.Data.ToList();
 
         // Calculate advance balances for all customers
         var receiptCredits = await _context.VoucherEntries
@@ -79,16 +83,21 @@ public class AccountsDashboardService : IAccountsDashboardService
             }
         }
 
-        return result.OrderByDescending(r => r.Outstanding).ToList();
+        var sortedResult = result.OrderByDescending(r => r.Outstanding).ToList();
+        
+        int count = sortedResult.Count;
+        var pagedData = sortedResult.Skip((pagination.PageNumber - 1) * pagination.PageSize).Take(pagination.PageSize).ToList();
+
+        return new PagedResponse<CustomerOutstandingDto>(pagedData, count, pagination.PageNumber, pagination.PageSize);
     }
 
     public async Task<CustomerOutstandingDetailDto> GetCustomerOutstandingDetailAsync(Guid customerId)
     {
-        var invoices = await _invoiceStatusService.GetInvoicesByStatusAsync(customerId, null);
+        var invoicesPaged = await _invoiceStatusService.GetInvoicesByStatusAsync(customerId, null, new PaginationRequest { PageSize = int.MaxValue });
         return new CustomerOutstandingDetailDto
         {
             CustomerId = customerId,
-            Invoices = invoices
+            Invoices = invoicesPaged.Data.ToList()
         };
     }
 }
