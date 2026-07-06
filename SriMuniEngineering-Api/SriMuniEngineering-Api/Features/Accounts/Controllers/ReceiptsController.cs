@@ -23,6 +23,14 @@ public class ReceiptsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("receipts/{receiptVoucherId}")]
+    public async Task<IActionResult> GetReceipt(Guid receiptVoucherId)
+    {
+        var result = await _receiptService.GetReceiptByIdAsync(receiptVoucherId);
+        if (result == null) return NotFound(new { message = "Receipt not found." });
+        return Ok(result);
+    }
+
     [HttpPost("receipts")]
     public async Task<IActionResult> CreateReceipt([FromBody] CreateReceiptRequest request)
     {

@@ -10,6 +10,7 @@ namespace SriMuniEngineering_Api.Features.Accounts.Services;
 public interface IReceiptService
 {
     Task<PagedResponse<ReceiptDto>> GetReceiptsAsync(Guid? customerId, PaginationRequest pagination);
+    Task<ReceiptDto?> GetReceiptByIdAsync(Guid receiptVoucherId);
     Task<Voucher> CreateReceiptAsync(CreateReceiptRequest request);
     Task AllocateAsync(Guid receiptVoucherId, AllocateRequest request);
     Task DeleteAllocationAsync(Guid allocationId);
@@ -70,6 +71,29 @@ public class ReceiptService : IReceiptService
         var pagedData = sortedResult.Skip((pagination.PageNumber - 1) * pagination.PageSize).Take(pagination.PageSize).ToList();
 
         return new PagedResponse<ReceiptDto>(pagedData, count, pagination.PageNumber, pagination.PageSize);
+    }
+
+    public async Task<ReceiptDto?> GetReceiptByIdAsync(Guid receiptVoucherId)
+    {
+        return await _context.VoucherEntries
+            .Include(e => e.Voucher)
+            .Include(e => e.CustomerLedger)
+                .ThenInclude(l => l!.Customer)
+            .Include(e => e.Allocations)
+            .Where(e => e.VoucherId == receiptVoucherId && e.CreditAmount > 0 && e.CustomerLedgerId != null)
+            .Select(e => new ReceiptDto
+            {
+                VoucherId = e.VoucherId,
+                VoucherNumber = e.Voucher.VoucherNumber,
+                ReceiptDate = e.Voucher.VoucherDate,
+                CustomerId = e.CustomerLedger!.CustomerId,
+                CustomerName = e.CustomerLedger.Customer.Name,
+                Amount = e.CreditAmount,
+                AllocatedAmount = e.Allocations.Sum(a => a.AllocatedAmount),
+                ReferenceNumber = e.Voucher.ReferenceNumber,
+                Narration = e.Voucher.Narration
+            })
+            .FirstOrDefaultAsync();
     }
 
     public async Task<Voucher> CreateReceiptAsync(CreateReceiptRequest request)
