@@ -12,7 +12,6 @@ public class CreateCustomerRequest
     [MaxLength(500)]
     public string BillingAddress { get; set; } = string.Empty;
 
-    [Required]
     [MaxLength(500)]
     public string ShippingAddress { get; set; } = string.Empty;
 

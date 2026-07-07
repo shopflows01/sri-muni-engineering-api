@@ -20,6 +20,14 @@ public class CreateProductRequest
     public decimal BasePricePerUnit { get; set; }
 
     [Required]
+    [Range(0, double.MaxValue)]
+    public decimal RatePerItem { get; set; }
+
+    [Required]
+    [Range(0, 100)]
+    public decimal GstPercent { get; set; }
+
+    [Required]
     [MaxLength(20)]
     public string HsnSac { get; set; } = string.Empty;
 
@@ -36,6 +44,8 @@ public class ProductResponse
     public string PartName { get; set; } = string.Empty;
     public string? PartDescription { get; set; }
     public decimal BasePricePerUnit { get; set; }
+    public decimal RatePerItem { get; set; }
+    public decimal GstPercent { get; set; }
     public string HsnSac { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public bool IsDeleted { get; set; }

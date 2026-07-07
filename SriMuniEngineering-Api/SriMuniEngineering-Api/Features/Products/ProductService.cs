@@ -28,6 +28,8 @@ public class ProductService
             PartName = request.PartName,
             PartDescription = request.PartDescription,
             BasePricePerUnit = request.BasePricePerUnit,
+            RatePerItem = request.RatePerItem,
+            GstPercent = request.GstPercent,
             HsnSac = request.HsnSac,
             Unit = request.Unit
         };
@@ -47,6 +49,8 @@ public class ProductService
         product.PartName = request.PartName;
         product.PartDescription = request.PartDescription;
         product.BasePricePerUnit = request.BasePricePerUnit;
+        product.RatePerItem = request.RatePerItem;
+        product.GstPercent = request.GstPercent;
         product.HsnSac = request.HsnSac;
         product.Unit = request.Unit;
 
@@ -119,6 +123,8 @@ public class ProductService
         PartName = p.PartName,
         PartDescription = p.PartDescription,
         BasePricePerUnit = p.BasePricePerUnit,
+        RatePerItem = p.RatePerItem,
+        GstPercent = p.GstPercent,
         HsnSac = p.HsnSac,
         Unit = p.Unit,
         IsDeleted = p.IsDeleted,

@@ -99,6 +99,7 @@ public class InvoiceService
             AmountInWords = ConvertToWords(grandTotal),
             Remarks = request.Remarks,
             DeliveryNoteNo = request.DeliveryNoteNo,
+            DcDate = request.DcDate,
             ReferenceNo = request.ReferenceNo,
             BuyersOrderNo = request.BuyersOrderNo,
             DispatchDocNo = request.DispatchDocNo,
@@ -111,6 +112,22 @@ public class InvoiceService
         };
 
         _context.Invoices.Add(invoice);
+
+        // ─── Update Stock Ledger (Outward Qty) ──────────────────────
+        if (request.DcLedgerId.HasValue)
+        {
+            var ledger = await _context.JobWorkLedgers.FirstOrDefaultAsync(l => l.Id == request.DcLedgerId.Value);
+            if (ledger != null)
+            {
+                // Find invoice item matching this ledger's product
+                var matchingItem = invoiceItems.FirstOrDefault(i => i.ProductId == ledger.ProductId);
+                if (matchingItem != null)
+                {
+                    ledger.OutwardQty += (int)matchingItem.Quantity;
+                }
+            }
+        }
+
         await _context.SaveChangesAsync();
 
         // ─── Post to Accounting Ledger ──────────────────────────────
@@ -170,6 +187,7 @@ public class InvoiceService
         invoice.AmountInWords = ConvertToWords(grandTotal);
         invoice.Remarks = request.Remarks;
         invoice.DeliveryNoteNo = request.DeliveryNoteNo;
+        invoice.DcDate = request.DcDate;
         invoice.ReferenceNo = request.ReferenceNo;
         invoice.BuyersOrderNo = request.BuyersOrderNo;
         invoice.DispatchDocNo = request.DispatchDocNo;
@@ -329,6 +347,7 @@ public class InvoiceService
         AmountInWords = invoice.AmountInWords,
         Remarks = invoice.Remarks,
         DeliveryNoteNo = invoice.DeliveryNoteNo,
+        DcDate = invoice.DcDate,
         ReferenceNo = invoice.ReferenceNo,
         BuyersOrderNo = invoice.BuyersOrderNo,
         DispatchDocNo = invoice.DispatchDocNo,

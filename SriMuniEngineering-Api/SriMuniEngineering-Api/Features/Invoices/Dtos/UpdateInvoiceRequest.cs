@@ -15,7 +15,9 @@ public class UpdateInvoiceRequest
     public List<CreateInvoiceItemRequest> Items { get; set; } = [];
 
     public string? Remarks { get; set; }
+    public Guid? DcLedgerId { get; set; }
     public string? DeliveryNoteNo { get; set; }
+    public DateTime? DcDate { get; set; }
     public string? ReferenceNo { get; set; }
     public string? BuyersOrderNo { get; set; }
     public string? DispatchDocNo { get; set; }
