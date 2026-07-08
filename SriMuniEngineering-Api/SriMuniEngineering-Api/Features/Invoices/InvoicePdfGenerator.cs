@@ -28,7 +28,7 @@ public static class InvoicePdfGenerator
         if (duplicateForTransporter) labels.Add("DUPLICATE FOR TRANSPORTER");
         if (triplicateForSupplier) labels.Add("TRIPLICATE FOR SUPPLIER");
 
-       
+        if (labels.Count == 0) labels.Add(null);
 
         var document = Document.Create(container =>
         {
@@ -210,7 +210,7 @@ public static class InvoicePdfGenerator
 
                 for (uint col = 1; col <= 7; col++)
                 {
-                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(80);
+                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(120);
                 }
 
                 table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(11);
