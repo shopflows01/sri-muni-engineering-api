@@ -1,3 +1,5 @@
+using SriMuniEngineering_Api.Domain.Enums;
+
 namespace SriMuniEngineering_Api.Domain.Entities;
 
 public class Invoice
@@ -23,7 +25,7 @@ public class Invoice
     public string? AsnNo { get; set; }
     public string? EwbNo { get; set; }
     public string? StoredFilePath { get; set; }
-    public string Status { get; set; } = "Unpaid";
+    public InvoiceStatus Status { get; set; } = InvoiceStatus.Unpaid;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Navigation properties

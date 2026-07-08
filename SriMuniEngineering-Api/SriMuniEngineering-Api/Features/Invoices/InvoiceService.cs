@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SriMuniEngineering_Api.Common;
 using SriMuniEngineering_Api.Domain.Entities;
+using SriMuniEngineering_Api.Domain.Enums;
 using SriMuniEngineering_Api.Features.Invoices.Dtos;
 using SriMuniEngineering_Api.Infrastructure.Data;
 using SriMuniEngineering_Api.Infrastructure.Storage;
@@ -107,7 +108,7 @@ public class InvoiceService
             TermsOfDelivery = request.TermsOfDelivery,
             AsnNo = request.AsnNo,
             EwbNo = request.EwbNo,
-            Status = "Unpaid",
+            Status = InvoiceStatus.Unpaid,
             Items = invoiceItems,
             CreatedAt = DateTime.Now
         };
@@ -359,7 +360,7 @@ public class InvoiceService
         DownloadUrl = invoice.StoredFilePath != null
             ? $"/api/files/invoice/{Uri.EscapeDataString(invoice.InvoiceNo)}.pdf"
             : null,
-        Status = invoice.Status,
+        Status = invoice.Status.ToString(),
         Items = invoice.Items.Select(item => new InvoiceItemResponse
         {
             Id = item.Id,

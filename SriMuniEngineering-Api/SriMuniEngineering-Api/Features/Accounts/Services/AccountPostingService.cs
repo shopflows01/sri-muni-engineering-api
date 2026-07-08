@@ -137,11 +137,11 @@ public class AccountPostingService
                     var newTotalAllocated = previouslyAllocated + alloc.Amount;
                     if (newTotalAllocated >= invoice.GrandTotal)
                     {
-                        invoice.Status = "Paid";
+                        invoice.Status = InvoiceStatus.Paid;
                     }
                     else if (newTotalAllocated > 0)
                     {
-                        invoice.Status = "PartiallyPaid";
+                        invoice.Status = InvoiceStatus.PartiallyPaid;
                     }
                 }
 

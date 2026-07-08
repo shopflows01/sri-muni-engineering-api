@@ -4,6 +4,8 @@ using SriMuniEngineering_Api.Infrastructure.Data;
 
 using SriMuniEngineering_Api.Common.Dtos;
 
+using SriMuniEngineering_Api.Domain.Enums;
+
 namespace SriMuniEngineering_Api.Features.Accounts.Services;
 
 public interface IInvoiceStatusService
@@ -41,7 +43,7 @@ public class InvoiceStatusService : IInvoiceStatusService
             InvoiceTotal = invoice.GrandTotal,
             AllocatedAmount = allocated,
             Outstanding = outstanding,
-            Status = invoice.Status
+            Status = invoice.Status.ToString()
         };
     }
 
@@ -54,9 +56,9 @@ public class InvoiceStatusService : IInvoiceStatusService
             query = query.Where(i => i.CustomerId == customerId.Value);
         }
         
-        if (!string.IsNullOrEmpty(status))
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<InvoiceStatus>(status, true, out var parsedStatus))
         {
-            query = query.Where(i => i.Status == status);
+            query = query.Where(i => i.Status == parsedStatus);
         }
 
         var invoices = await query
@@ -85,7 +87,7 @@ public class InvoiceStatusService : IInvoiceStatusService
                 InvoiceTotal = i.GrandTotal,
                 AllocatedAmount = i.AllocatedAmount,
                 Outstanding = outstanding,
-                Status = i.Status
+                Status = i.Status.ToString()
             };
         });
 

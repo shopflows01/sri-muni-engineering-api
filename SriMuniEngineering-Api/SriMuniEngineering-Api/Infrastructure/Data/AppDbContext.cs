@@ -134,6 +134,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.AsnNo).HasMaxLength(100);
             entity.Property(e => e.EwbNo).HasMaxLength(100);
             entity.Property(e => e.StoredFilePath).HasMaxLength(500);
+            entity.Property(e => e.Status).HasConversion<string>();
 
             entity.HasOne(e => e.Customer)
                 .WithMany(c => c.Invoices)
