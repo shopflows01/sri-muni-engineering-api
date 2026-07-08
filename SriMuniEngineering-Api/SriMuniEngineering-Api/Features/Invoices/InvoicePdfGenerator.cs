@@ -38,11 +38,11 @@ public static class InvoicePdfGenerator
                 {
                     page.Size(PageSizes.A4);
                     page.Margin(20);
-                    page.DefaultTextStyle(x => x.FontSize(10));
+                    page.DefaultTextStyle(x => x.FontSize(9));
 
                     page.Header().Element(header => ComposeHeader(header, label));
                     page.Content().Element(content => ComposeContent(content, invoice, companyProfile));
-                    page.Footer().AlignCenter().Text("SUBJECT TO HOSUR JURISDICTION").FontSize(10).Bold();
+                    page.Footer().AlignCenter().Text("SUBJECT TO HOSUR JURISDICTION").FontSize(9).Bold();
                 });
             }
         });
@@ -62,12 +62,12 @@ public static class InvoicePdfGenerator
                     leftCol.Width(60).Image(LogoPath);
                 }
 
-                row.RelativeItem().AlignCenter().AlignMiddle().Text("TAX INVOICE").Bold().FontSize(15);
+                row.RelativeItem().AlignCenter().AlignMiddle().Text("TAX INVOICE").Bold().FontSize(14);
 
                 var rightCol = row.ConstantItem(180).AlignRight().AlignTop();
                 if (!string.IsNullOrEmpty(copyLabel))
                 {
-                    rightCol.Text($"({copyLabel})").FontSize(11).Italic();
+                    rightCol.Text($"({copyLabel})").FontSize(10).Italic();
                 }
             });
             col.Item().PaddingBottom(3).LineHorizontal(0.5f);
@@ -83,17 +83,17 @@ public static class InvoicePdfGenerator
                 row.RelativeItem().BorderRight(0.5f).Padding(3).Column(col =>
                 {
                     col.Spacing(2);
-                    col.Item().Text(company["Name"]!).Bold().FontSize(14);
-                    col.Item().Text($"{company["Address1"]}").FontSize(11);
-                    col.Item().Text($"{company["Address2"]}").FontSize(11);
-                    col.Item().Text($"{company["City"]} - {company["Pincode"]}").FontSize(11);
+                    col.Item().Text(company["Name"]!).Bold().FontSize(12);
+                    col.Item().Text($"{company["Address1"]}").FontSize(9);
+                    col.Item().Text($"{company["Address2"]}").FontSize(9);
+                    col.Item().Text($"{company["City"]} - {company["Pincode"]}").FontSize(9);
                     col.Item().Text(t => {
-                        t.Span("GSTIN/UIN : ").FontSize(11);
-                        t.Span(company["Gstin"]?.ToUpper()).Bold().FontSize(11);
+                        t.Span("GSTIN/UIN : ").FontSize(9);
+                        t.Span(company["Gstin"]?.ToUpper()).Bold().FontSize(9);
                     });
-                    col.Item().Text($"State Name : {company["State"]}, Code : {company["StateCode"]}").FontSize(11);
-                    col.Item().Text($"Contact : {company["Phone"]}, {company["AltPhone"]}").FontSize(11);
-                    col.Item().Text($"E-Mail : {company["Email"]}").FontSize(11);
+                    col.Item().Text($"State Name : {company["State"]}, Code : {company["StateCode"]}").FontSize(9);
+                    col.Item().Text($"Contact : {company["Phone"]}, {company["AltPhone"]}").FontSize(9);
+                    col.Item().Text($"E-Mail : {company["Email"]}").FontSize(9);
                 });
 
                 row.RelativeItem().Column(col =>
@@ -111,8 +111,8 @@ public static class InvoicePdfGenerator
                             var cell = fullWidth ? t.Cell().ColumnSpan(2) : t.Cell();
                             cell.BorderBottom(0.5f).BorderRight(fullWidth ? 0 : 0.5f).Padding(2).Column(c =>
                             {
-                                c.Item().Text(label).FontSize(9);
-                                c.Item().Text(value).Bold().FontSize(11);
+                                c.Item().Text(label).FontSize(8);
+                                c.Item().Text(value).Bold().FontSize(9);
                             });
                         }
 
@@ -134,21 +134,21 @@ public static class InvoicePdfGenerator
             column.Item().Border(0.5f).BorderTop(0).Padding(3).Column(col =>
             {
                 col.Spacing(2);
-                col.Item().Text("Buyer (Bill To)").FontSize(10).Italic();
-                col.Item().Text(invoice.Customer.Name).Bold().FontSize(12);
-                col.Item().Text(invoice.Customer.BillingAddress).FontSize(11);
+                col.Item().Text("Buyer (Bill To)").FontSize(9).Italic();
+                col.Item().Text(invoice.Customer.Name).Bold().FontSize(11);
+                col.Item().Text(invoice.Customer.BillingAddress).FontSize(9);
                 col.Item().Text(t => {
-                    t.Span("GSTIN/UIN : ").FontSize(11);
-                    t.Span(invoice.Customer.GSTIN.ToUpper()).Bold().FontSize(11);
+                    t.Span("GSTIN/UIN : ").FontSize(9);
+                    t.Span(invoice.Customer.GSTIN.ToUpper()).Bold().FontSize(9);
                 });
-                col.Item().Text($"State Name : {invoice.Customer.StateName}, Code : {invoice.Customer.StateCode}").FontSize(11);
+                col.Item().Text($"State Name : {invoice.Customer.StateName}, Code : {invoice.Customer.StateCode}").FontSize(9);
             });
 
             column.Item().PaddingTop(3).Border(0.5f).Table(table =>
             {
                 table.ColumnsDefinition(columns =>
                 {
-                    columns.ConstantColumn(35);
+                    columns.ConstantColumn(30);
                     columns.RelativeColumn(3f);
                     columns.RelativeColumn(1f);
                     columns.RelativeColumn(1f);
@@ -159,30 +159,30 @@ public static class InvoicePdfGenerator
 
                 table.Header(header =>
                 {
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(4).AlignCenter().Text("Sl\nNo").Bold().FontSize(10);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(4).AlignCenter().Text("Description of Goods").Bold().FontSize(10);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(4).AlignCenter().Text("HSN/SAC").Bold().FontSize(10);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(4).AlignCenter().Text("Quantity").Bold().FontSize(10);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(4).AlignCenter().Text("Rate").Bold().FontSize(10);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(4).AlignCenter().Text("per").Bold().FontSize(10);
-                    header.Cell().BorderBottom(0.5f).Padding(4).AlignCenter().Text("Amount").Bold().FontSize(10);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Sl\nNo").Bold().FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Description of Goods").Bold().FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("HSN/SAC").Bold().FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Quantity").Bold().FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Rate").Bold().FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("per").Bold().FontSize(9);
+                    header.Cell().BorderBottom(0.5f).Padding(3).AlignCenter().Text("Amount").Bold().FontSize(9);
                 });
 
                 int slNo = 1;
                 foreach (var item in invoice.Items)
                 {
-                    table.Cell().BorderRight(0.5f).Padding(4).AlignCenter().Text(slNo.ToString()).FontSize(10);
-                    table.Cell().BorderRight(0.5f).Padding(4).Column(col =>
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(slNo.ToString()).FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(3).Column(col =>
                     {
-                        col.Item().Text(item.Product.PartName).Bold().FontSize(12);
+                        col.Item().Text(item.Product.PartName).Bold().FontSize(11);
                         if (!string.IsNullOrEmpty(item.Description))
-                            col.Item().Text(item.Description).FontSize(10);
+                            col.Item().Text(item.Description).FontSize(9);
                     });
-                    table.Cell().BorderRight(0.5f).Padding(4).AlignCenter().Text(item.HsnCode ?? item.Product.HsnSac).FontSize(10);
-                    table.Cell().BorderRight(0.5f).Padding(4).AlignCenter().Text($"{item.Quantity:F0} {item.Product.Unit}").FontSize(10);
-                    table.Cell().BorderRight(0.5f).Padding(4).AlignRight().Text(item.Rate.ToString("F2")).FontSize(10);
-                    table.Cell().BorderRight(0.5f).Padding(4).AlignCenter().Text(item.Product.Unit).FontSize(10);
-                    table.Cell().Padding(4).AlignRight().Text(item.Amount.ToString("N2")).Bold().FontSize(11);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(item.HsnCode ?? item.Product.HsnSac).FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text($"{item.Quantity:F0} {item.Product.Unit}").FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignRight().Text(item.Rate.ToString("F2")).FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(item.Product.Unit).FontSize(9);
+                    table.Cell().Padding(3).AlignRight().Text(item.Amount.ToString("N2")).Bold().FontSize(10);
 
                     slNo++;
                 }
@@ -194,13 +194,13 @@ public static class InvoicePdfGenerator
 
                 void AddTaxRow(string name, decimal amt) {
                     if (amt > 0) {
-                        table.Cell().BorderRight(0.5f).Padding(4).Text("");
-                        table.Cell().BorderRight(0.5f).Padding(4).AlignRight().Text(name).Bold().Italic().FontSize(11);
-                        table.Cell().BorderRight(0.5f).Padding(4).Text("");
-                        table.Cell().BorderRight(0.5f).Padding(4).Text("");
-                        table.Cell().BorderRight(0.5f).Padding(4).Text("");
-                        table.Cell().BorderRight(0.5f).Padding(4).Text("");
-                        table.Cell().Padding(4).AlignRight().Text(amt.ToString("N2")).Bold().FontSize(11);
+                        table.Cell().BorderRight(0.5f).Padding(3).Text("");
+                        table.Cell().BorderRight(0.5f).Padding(3).AlignRight().Text(name).Bold().Italic().FontSize(10);
+                        table.Cell().BorderRight(0.5f).Padding(3).Text("");
+                        table.Cell().BorderRight(0.5f).Padding(3).Text("");
+                        table.Cell().BorderRight(0.5f).Padding(3).Text("");
+                        table.Cell().BorderRight(0.5f).Padding(3).Text("");
+                        table.Cell().Padding(3).AlignRight().Text(amt.ToString("N2")).Bold().FontSize(10);
                     }
                 }
 
@@ -213,14 +213,18 @@ public static class InvoicePdfGenerator
                     table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(80);
                 }
 
-                table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(4).AlignRight().Text("Total").Bold().FontSize(12);
-                table.Cell().BorderTop(0.5f).Padding(4).AlignRight().Text($"₹ {invoice.GrandTotal:N2}").Bold().FontSize(12);
+                table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(11);
+                table.Cell().BorderTop(0.5f).Padding(3).AlignRight().Text($"₹ {invoice.GrandTotal:N2}").Bold().FontSize(11);
             });
 
-            column.Item().PaddingTop(3).Border(0.5f).Padding(5).Column(col =>
+            column.Item().PaddingTop(3).Border(0.5f).Padding(5).Row(row =>
             {
-                col.Item().Text("Amount Chargeable (in words)").FontSize(10).Italic();
-                col.Item().Text(invoice.AmountInWords ?? "").Bold().FontSize(13);
+                row.RelativeItem().Column(col =>
+                {
+                    col.Item().Text("Amount Chargeable (in words)").FontSize(9).Italic();
+                    col.Item().Text(invoice.AmountInWords ?? "").Bold().FontSize(11);
+                });
+                row.AutoItem().AlignRight().Text("E. & O.E").Bold().FontSize(10);
             });
 
             var taxGroups = invoice.Items
@@ -250,12 +254,12 @@ public static class InvoicePdfGenerator
 
                 table.Header(header =>
                 {
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("HSN/SAC").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Taxable\nValue").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Central Tax\nRate & Amt").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("State Tax\nRate & Amt").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Integrated Tax\nRate & Amt").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).Padding(3).AlignCenter().Text("Total Tax\nAmount").Bold().FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("HSN/SAC").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("Taxable\nValue").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("Central Tax\nRate & Amt").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("State Tax\nRate & Amt").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("Integrated Tax\nRate & Amt").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).Padding(2).AlignCenter().Text("Total Tax\nAmount").Bold().FontSize(8);
                 });
 
                 bool isInterState = company["StateCode"] != invoice.Customer.StateCode.ToString();
@@ -275,69 +279,69 @@ public static class InvoicePdfGenerator
                     totalSgst += sgstAmt;
                     totalIgst += igstAmt;
 
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(group.HsnSac).FontSize(9);
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignRight().Text(group.TaxableValue.ToString("N2")).FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(2).AlignCenter().Text(group.HsnSac).FontSize(8);
+                    table.Cell().BorderRight(0.5f).Padding(2).AlignRight().Text(group.TaxableValue.ToString("N2")).FontSize(8);
                     
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Column(col => {
-                        if (cgstPercent > 0) { col.Item().Text($"{cgstPercent:F1}%").FontSize(8); col.Item().Text(cgstAmt.ToString("N2")).FontSize(9); }
-                        else col.Item().Text("-").FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(2).AlignCenter().Column(col => {
+                        if (cgstPercent > 0) { col.Item().Text($"{cgstPercent:F1}%").FontSize(7); col.Item().Text(cgstAmt.ToString("N2")).FontSize(8); }
+                        else col.Item().Text("-").FontSize(8);
                     });
                     
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Column(col => {
-                        if (sgstPercent > 0) { col.Item().Text($"{sgstPercent:F1}%").FontSize(8); col.Item().Text(sgstAmt.ToString("N2")).FontSize(9); }
-                        else col.Item().Text("-").FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(2).AlignCenter().Column(col => {
+                        if (sgstPercent > 0) { col.Item().Text($"{sgstPercent:F1}%").FontSize(7); col.Item().Text(sgstAmt.ToString("N2")).FontSize(8); }
+                        else col.Item().Text("-").FontSize(8);
                     });
                     
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Column(col => {
-                        if (igstPercent > 0) { col.Item().Text($"{igstPercent:F1}%").FontSize(8); col.Item().Text(igstAmt.ToString("N2")).FontSize(9); }
-                        else col.Item().Text("-").FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(2).AlignCenter().Column(col => {
+                        if (igstPercent > 0) { col.Item().Text($"{igstPercent:F1}%").FontSize(7); col.Item().Text(igstAmt.ToString("N2")).FontSize(8); }
+                        else col.Item().Text("-").FontSize(8);
                     });
                     
-                    table.Cell().Padding(3).AlignRight().Text(group.TaxAmount.ToString("N2")).FontSize(9);
+                    table.Cell().Padding(2).AlignRight().Text(group.TaxAmount.ToString("N2")).FontSize(8);
                 }
 
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(10);
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text(invoice.SubTotal.ToString("N2")).Bold().FontSize(10);
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text(totalCgst > 0 ? totalCgst.ToString("N2") : "-").Bold().FontSize(10);
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text(totalSgst > 0 ? totalSgst.ToString("N2") : "-").Bold().FontSize(10);
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text(totalIgst > 0 ? totalIgst.ToString("N2") : "-").Bold().FontSize(10);
-                table.Cell().BorderTop(0.5f).Padding(3).AlignRight().Text(invoice.GSTAmount.ToString("N2")).Bold().FontSize(10);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignRight().Text("Total").Bold().FontSize(9);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignRight().Text(invoice.SubTotal.ToString("N2")).Bold().FontSize(9);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text(totalCgst > 0 ? totalCgst.ToString("N2") : "-").Bold().FontSize(9);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text(totalSgst > 0 ? totalSgst.ToString("N2") : "-").Bold().FontSize(9);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text(totalIgst > 0 ? totalIgst.ToString("N2") : "-").Bold().FontSize(9);
+                table.Cell().BorderTop(0.5f).Padding(2).AlignRight().Text(invoice.GSTAmount.ToString("N2")).Bold().FontSize(9);
             });
 
             var taxWords = ConvertToWords(invoice.GSTAmount);
-            column.Item().PaddingTop(5).Text(text => 
+            column.Item().PaddingTop(3).Text(text => 
             {
-                 text.Span("Tax Amount (in words) : ").FontSize(10).Italic();
-                 text.Span(taxWords).Bold().FontSize(12);
+                 text.Span("Tax Amount (in words) : ").FontSize(9).Italic();
+                 text.Span(taxWords).Bold().FontSize(10);
             });
 
-            column.Item().PaddingTop(10).Row(row =>
+            column.Item().PaddingTop(5).Row(row =>
             {
                 row.RelativeItem().Column(col =>
                 {
-                    col.Item().Text("Declaration").Bold().FontSize(11);
-                    col.Item().Text("We declare that this invoice shows the actual price of the").FontSize(10);
-                    col.Item().Text("goods described and that all particulars are true and correct.").FontSize(10);
+                    col.Item().Text("Declaration").Bold().FontSize(10);
+                    col.Item().Text("We declare that this invoice shows the actual price of the").FontSize(9);
+                    col.Item().Text("goods described and that all particulars are true and correct.").FontSize(9);
                 });
 
                 row.RelativeItem().PaddingLeft(35).Column(col =>
                 {
-                    col.Item().Text("Company's Bank Details").Bold().FontSize(11);
-                    col.Item().Text($"A/c Holder's Name : {company["Name"]}").FontSize(10);
-                    col.Item().Text($"Bank Name : {company["BankName"]}").FontSize(10);
-                    col.Item().Text($"A/c No. : {company["AccountNo"]}").FontSize(10);
-                    col.Item().Text($"Branch & IFS Code : {company["BankBranch"]} & {company["BranchIfsc"]}").FontSize(10);
+                    col.Item().Text("Company's Bank Details").Bold().FontSize(10);
+                    col.Item().Text($"A/c Holder's Name : {company["Name"]}").FontSize(9);
+                    col.Item().Text($"Bank Name : {company["BankName"]}").FontSize(9);
+                    col.Item().Text($"A/c No. : {company["AccountNo"]}").FontSize(9);
+                    col.Item().Text($"Branch & IFS Code : {company["BankBranch"]} & {company["BranchIfsc"]}").FontSize(9);
                 });
             });
 
             column.Item().PaddingTop(15).Row(row =>
             {
-                row.RelativeItem().AlignBottom().Text("Customer's Seal and Signature").FontSize(10);
+                row.RelativeItem().Text("Customer's Seal and Signature").FontSize(9);
 
                 row.RelativeItem().PaddingLeft(35).Column(col =>
                 {
-                    col.Item().AlignRight().Text($"for {company["Name"]}").Bold().FontSize(11);
-                    col.Item().PaddingTop(40).AlignRight().Text("Authorised Signatory").FontSize(10);
+                    col.Item().AlignRight().Text($"for {company["Name"]}").Bold().FontSize(10);
+                    col.Item().PaddingTop(40).AlignRight().Text("Authorised Signatory").FontSize(9);
                 });
             });
         });
