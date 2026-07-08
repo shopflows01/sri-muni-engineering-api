@@ -94,4 +94,11 @@ public class ReceiptsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpGet("allocations")]
+    public async Task<IActionResult> GetAllocations([FromQuery] string? search, [FromQuery] PaginationRequest pagination)
+    {
+        var result = await _receiptService.GetAllocationsAsync(search, pagination);
+        return Ok(result);
+    }
 }

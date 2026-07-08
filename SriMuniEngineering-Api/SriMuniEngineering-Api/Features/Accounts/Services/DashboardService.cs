@@ -59,7 +59,7 @@ public class AccountsDashboardService : IAccountsDashboardService
 
         foreach (var customer in customers)
         {
-            var customerInvoices = allInvoices.Where(i => _context.Invoices.Any(dbI => dbI.Id == i.InvoiceId && dbI.CustomerId == customer.Id)).ToList();
+            var customerInvoices = allInvoices.Where(i => i.CustomerId == customer.Id).ToList();
             
             decimal totalInvoiced = customerInvoices.Sum(i => i.InvoiceTotal);
             decimal outstanding = customerInvoices.Sum(i => i.Outstanding);

@@ -127,6 +127,24 @@ public class AccountPostingService
                     throw new InvalidOperationException("Allocation amount must be greater than zero.");
                 }
 
+                var invoice = await _context.Invoices.FindAsync(alloc.InvoiceId);
+                if (invoice != null)
+                {
+                    var previouslyAllocated = await _context.VoucherAllocations
+                        .Where(a => a.InvoiceId == invoice.Id)
+                        .SumAsync(a => a.AllocatedAmount);
+                    
+                    var newTotalAllocated = previouslyAllocated + alloc.Amount;
+                    if (newTotalAllocated >= invoice.GrandTotal)
+                    {
+                        invoice.Status = "Paid";
+                    }
+                    else if (newTotalAllocated > 0)
+                    {
+                        invoice.Status = "PartiallyPaid";
+                    }
+                }
+
                 creditEntry.Allocations.Add(new VoucherAllocation
                 {
                     Id = Guid.NewGuid(),

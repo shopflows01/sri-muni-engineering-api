@@ -9,10 +9,12 @@ namespace SriMuniEngineering_Api.Features.Accounts.Controllers;
 public class AccountsDashboardController : ControllerBase
 {
     private readonly IAccountsDashboardService _dashboardService;
+    private readonly IInvoiceStatusService _invoiceStatusService;
 
-    public AccountsDashboardController(IAccountsDashboardService dashboardService)
+    public AccountsDashboardController(IAccountsDashboardService dashboardService, IInvoiceStatusService invoiceStatusService)
     {
         _dashboardService = dashboardService;
+        _invoiceStatusService = invoiceStatusService;
     }
 
     [HttpGet("invoices-summary")]
@@ -33,6 +35,13 @@ public class AccountsDashboardController : ControllerBase
     public async Task<IActionResult> GetCustomerOutstandingDetail(Guid customerId)
     {
         var result = await _dashboardService.GetCustomerOutstandingDetailAsync(customerId);
+        return Ok(result);
+    }
+
+    [HttpGet("invoices/status")]
+    public async Task<IActionResult> GetInvoicesByStatus([FromQuery] Guid? customerId, [FromQuery] string? status, [FromQuery] PaginationRequest pagination)
+    {
+        var result = await _invoiceStatusService.GetInvoicesByStatusAsync(customerId, status, pagination);
         return Ok(result);
     }
 }

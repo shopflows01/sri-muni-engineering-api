@@ -31,17 +31,17 @@ public class InvoiceStatusService : IInvoiceStatusService
             .SumAsync(a => a.AllocatedAmount);
 
         decimal outstanding = invoice.GrandTotal - allocated;
-        string status = outstanding == invoice.GrandTotal ? "Unpaid" : (outstanding == 0 ? "Paid" : "PartiallyPaid");
 
         return new InvoiceStatusDto
         {
             InvoiceId = invoice.Id,
+            CustomerId = invoice.CustomerId,
             InvoiceNumber = invoice.InvoiceNo,
             InvoiceDate = invoice.Date,
             InvoiceTotal = invoice.GrandTotal,
             AllocatedAmount = allocated,
             Outstanding = outstanding,
-            Status = status
+            Status = invoice.Status
         };
     }
 
@@ -53,14 +53,21 @@ public class InvoiceStatusService : IInvoiceStatusService
         {
             query = query.Where(i => i.CustomerId == customerId.Value);
         }
+        
+        if (!string.IsNullOrEmpty(status))
+        {
+            query = query.Where(i => i.Status == status);
+        }
 
         var invoices = await query
             .Select(i => new
             {
                 i.Id,
+                i.CustomerId,
                 i.InvoiceNo,
                 i.Date,
                 i.GrandTotal,
+                i.Status,
                 AllocatedAmount = _context.VoucherAllocations.Where(a => a.InvoiceId == i.Id).Sum(a => a.AllocatedAmount)
             })
             .ToListAsync();
@@ -68,24 +75,19 @@ public class InvoiceStatusService : IInvoiceStatusService
         var result = invoices.Select(i => 
         {
             decimal outstanding = i.GrandTotal - i.AllocatedAmount;
-            string calcStatus = outstanding == i.GrandTotal ? "Unpaid" : (outstanding == 0 ? "Paid" : "PartiallyPaid");
             
             return new InvoiceStatusDto
             {
                 InvoiceId = i.Id,
+                CustomerId = i.CustomerId,
                 InvoiceNumber = i.InvoiceNo,
                 InvoiceDate = i.Date,
                 InvoiceTotal = i.GrandTotal,
                 AllocatedAmount = i.AllocatedAmount,
                 Outstanding = outstanding,
-                Status = calcStatus
+                Status = i.Status
             };
         });
-
-        if (!string.IsNullOrEmpty(status))
-        {
-            result = result.Where(r => r.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
-        }
 
         var sortedResult = result.OrderByDescending(r => r.InvoiceDate).ToList();
         

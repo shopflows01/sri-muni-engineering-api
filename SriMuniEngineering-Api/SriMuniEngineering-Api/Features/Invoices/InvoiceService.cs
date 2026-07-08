@@ -107,6 +107,7 @@ public class InvoiceService
             TermsOfDelivery = request.TermsOfDelivery,
             AsnNo = request.AsnNo,
             EwbNo = request.EwbNo,
+            Status = "Unpaid",
             Items = invoiceItems,
             CreatedAt = DateTime.Now
         };
@@ -358,6 +359,7 @@ public class InvoiceService
         DownloadUrl = invoice.StoredFilePath != null
             ? $"/api/files/invoice/{Uri.EscapeDataString(invoice.InvoiceNo)}.pdf"
             : null,
+        Status = invoice.Status,
         Items = invoice.Items.Select(item => new InvoiceItemResponse
         {
             Id = item.Id,

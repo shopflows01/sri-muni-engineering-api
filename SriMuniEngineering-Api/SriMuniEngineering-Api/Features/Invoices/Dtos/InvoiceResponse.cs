@@ -24,6 +24,7 @@ public class InvoiceResponse
     public string? AsnNo { get; set; }
     public string? EwbNo { get; set; }
     public string? DownloadUrl { get; set; }
+    public string Status { get; set; } = "Unpaid";
     public List<InvoiceItemResponse> Items { get; set; } = [];
     public DateTime CreatedAt { get; set; }
 }

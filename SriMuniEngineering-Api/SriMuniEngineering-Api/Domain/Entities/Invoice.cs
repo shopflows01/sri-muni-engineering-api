@@ -23,6 +23,7 @@ public class Invoice
     public string? AsnNo { get; set; }
     public string? EwbNo { get; set; }
     public string? StoredFilePath { get; set; }
+    public string Status { get; set; } = "Unpaid";
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Navigation properties

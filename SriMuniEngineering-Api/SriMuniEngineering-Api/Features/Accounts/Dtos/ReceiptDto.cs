@@ -12,4 +12,5 @@ public class ReceiptDto
     public decimal UnallocatedAmount => Amount - AllocatedAmount;
     public string? ReferenceNumber { get; set; }
     public string? Narration { get; set; }
+    public string VoucherType { get; set; } = string.Empty;
 }

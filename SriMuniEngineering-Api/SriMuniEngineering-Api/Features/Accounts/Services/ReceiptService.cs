@@ -15,6 +15,7 @@ public interface IReceiptService
     Task AllocateAsync(Guid receiptVoucherId, AllocateRequest request);
     Task DeleteAllocationAsync(Guid allocationId);
     Task UpdateAllocationAsync(Guid allocationId, UpdateAllocationRequest request);
+    Task<PagedResponse<AllocationResponseDto>> GetAllocationsAsync(string? search, PaginationRequest pagination);
 }
 
 public class ReceiptService : IReceiptService
@@ -35,7 +36,7 @@ public class ReceiptService : IReceiptService
             .Include(e => e.CustomerLedger)
                 .ThenInclude(l => l!.Customer)
             .Include(e => e.Allocations)
-            .Where(e => e.Voucher.VoucherType == Domain.Enums.VoucherType.Receipt && e.CreditAmount > 0 && e.CustomerLedgerId != null)
+            .Where(e => e.CustomerLedgerId != null && (e.CreditAmount > 0 || e.DebitAmount > 0))
             .AsQueryable();
 
         if (customerId.HasValue)
@@ -51,10 +52,11 @@ public class ReceiptService : IReceiptService
                 ReceiptDate = e.Voucher.VoucherDate,
                 CustomerId = e.CustomerLedger!.CustomerId,
                 CustomerName = e.CustomerLedger.Customer.Name,
-                Amount = e.CreditAmount,
+                Amount = e.CreditAmount > 0 ? e.CreditAmount : e.DebitAmount,
                 AllocatedAmount = e.Allocations.Sum(a => a.AllocatedAmount),
                 ReferenceNumber = e.Voucher.ReferenceNumber,
-                Narration = e.Voucher.Narration
+                Narration = e.Voucher.Narration,
+                VoucherType = e.Voucher.VoucherType.ToString()
             })
             .ToListAsync();
 
@@ -80,7 +82,7 @@ public class ReceiptService : IReceiptService
             .Include(e => e.CustomerLedger)
                 .ThenInclude(l => l!.Customer)
             .Include(e => e.Allocations)
-            .Where(e => e.VoucherId == receiptVoucherId && e.CreditAmount > 0 && e.CustomerLedgerId != null)
+            .Where(e => e.VoucherId == receiptVoucherId && e.CustomerLedgerId != null && (e.CreditAmount > 0 || e.DebitAmount > 0))
             .Select(e => new ReceiptDto
             {
                 VoucherId = e.VoucherId,
@@ -88,10 +90,11 @@ public class ReceiptService : IReceiptService
                 ReceiptDate = e.Voucher.VoucherDate,
                 CustomerId = e.CustomerLedger!.CustomerId,
                 CustomerName = e.CustomerLedger.Customer.Name,
-                Amount = e.CreditAmount,
+                Amount = e.CreditAmount > 0 ? e.CreditAmount : e.DebitAmount,
                 AllocatedAmount = e.Allocations.Sum(a => a.AllocatedAmount),
                 ReferenceNumber = e.Voucher.ReferenceNumber,
-                Narration = e.Voucher.Narration
+                Narration = e.Voucher.Narration,
+                VoucherType = e.Voucher.VoucherType.ToString()
             })
             .FirstOrDefaultAsync();
     }
@@ -208,5 +211,48 @@ public class ReceiptService : IReceiptService
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<PagedResponse<AllocationResponseDto>> GetAllocationsAsync(string? search, PaginationRequest pagination)
+    {
+        var query = _context.VoucherAllocations
+            .Include(a => a.VoucherEntry)
+                .ThenInclude(e => e.Voucher)
+            .Include(a => a.VoucherEntry)
+                .ThenInclude(e => e.CustomerLedger)
+                    .ThenInclude(l => l!.Customer)
+            .Include(a => a.Invoice)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            search = search.ToLower();
+            query = query.Where(a => 
+                a.Invoice.InvoiceNo.ToLower().Contains(search) || 
+                (a.VoucherEntry.CustomerLedger != null && a.VoucherEntry.CustomerLedger.Customer.Name.ToLower().Contains(search)) ||
+                a.VoucherEntry.Voucher.VoucherNumber.ToLower().Contains(search)
+            );
+        }
+
+        var result = await query
+            .Select(a => new AllocationResponseDto
+            {
+                Id = a.Id,
+                ReceiptVoucherId = a.VoucherEntry.VoucherId,
+                ReceiptVoucherNumber = a.VoucherEntry.Voucher.VoucherNumber,
+                InvoiceId = a.InvoiceId,
+                InvoiceNumber = a.Invoice.InvoiceNo,
+                CustomerName = a.VoucherEntry.CustomerLedger != null ? a.VoucherEntry.CustomerLedger.Customer.Name : string.Empty,
+                AllocatedAmount = a.AllocatedAmount,
+                AllocationDate = a.AllocationDate
+            })
+            .ToListAsync();
+
+        var sortedResult = result.OrderByDescending(a => a.AllocationDate).ToList();
+
+        int count = sortedResult.Count;
+        var pagedData = sortedResult.Skip((pagination.PageNumber - 1) * pagination.PageSize).Take(pagination.PageSize).ToList();
+
+        return new PagedResponse<AllocationResponseDto>(pagedData, count, pagination.PageNumber, pagination.PageSize);
     }
 }
