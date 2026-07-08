@@ -56,7 +56,7 @@ public static class InvoicePdfGenerator
         {
             col.Item().Row(row =>
             {
-                var leftCol = row.ConstantItem(120).AlignLeft().AlignMiddle();
+                var leftCol = row.ConstantItem(180).AlignLeft().AlignMiddle();
                 if (File.Exists(LogoPath))
                 {
                     leftCol.Width(60).Image(LogoPath);
