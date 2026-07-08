@@ -182,7 +182,8 @@ public static class InvoicePdfGenerator
                     table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text($"{item.Quantity:F0} {item.Product.Unit}").FontSize(9);
                     table.Cell().BorderRight(0.5f).Padding(3).AlignRight().Text(item.Rate.ToString("F2")).FontSize(9);
                     table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(item.Product.Unit).FontSize(9);
-                    table.Cell().Padding(3).AlignRight().Text(item.Amount.ToString("N2")).Bold().FontSize(10);
+                    decimal taxableAmount = (item.Quantity * item.Rate) - item.Discount;
+                    table.Cell().Padding(3).AlignRight().Text(taxableAmount.ToString("N2")).Bold().FontSize(10);
 
                     slNo++;
                 }
