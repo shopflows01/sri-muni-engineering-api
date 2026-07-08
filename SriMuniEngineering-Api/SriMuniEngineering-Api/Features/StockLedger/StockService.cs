@@ -93,6 +93,15 @@ public class StockService
         return MapToResponse(ledger);
     }
 
+    public async Task DeleteAsync(Guid id)
+    {
+        var ledger = await _context.JobWorkLedgers.FindAsync(id)
+            ?? throw new KeyNotFoundException($"Ledger entry with ID {id} not found.");
+
+        _context.JobWorkLedgers.Remove(ledger);
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<PaginatedResponse<LedgerResponse>> GetAllAsync(StockFilterRequest filter)
     {
         var query = _context.JobWorkLedgers

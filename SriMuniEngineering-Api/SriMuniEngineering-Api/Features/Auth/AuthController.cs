@@ -47,6 +47,21 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPut("reset-credentials")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetCredentials([FromBody] ResetCredentialsRequest request)
+    {
+        try
+        {
+            await _authService.ResetCredentialsAsync(request);
+            return Ok(new { message = "Credentials updated successfully." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("logout")]
     [Authorize]
     public IActionResult Logout()

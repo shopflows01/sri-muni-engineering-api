@@ -81,6 +81,32 @@ public class AuthService
         };
     }
 
+    public async Task ResetCredentialsAsync(ResetCredentialsRequest request)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (user is null)
+            throw new InvalidOperationException("No account found with that email address.");
+
+        if (string.IsNullOrWhiteSpace(request.NewUsername) && string.IsNullOrWhiteSpace(request.NewPassword))
+            throw new InvalidOperationException("Please provide either a new username or a new password.");
+
+        if (!string.IsNullOrWhiteSpace(request.NewUsername))
+        {
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.NewUsername);
+            if (existingUser is not null && existingUser.Id != user.Id)
+                throw new InvalidOperationException("Username is already taken.");
+                
+            user.Username = request.NewUsername;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
     public void Logout(string jti, DateTime tokenExpiry)
     {
         _blacklistService.BlacklistToken(jti, tokenExpiry);
