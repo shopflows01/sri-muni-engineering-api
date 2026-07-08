@@ -28,7 +28,7 @@ public static class InvoicePdfGenerator
         if (duplicateForTransporter) labels.Add("DUPLICATE FOR TRANSPORTER");
         if (triplicateForSupplier) labels.Add("TRIPLICATE FOR SUPPLIER");
 
-        if (labels.Count == 0) labels.Add("ORIGINAL FOR RECIPIENT");
+       
 
         var document = Document.Create(container =>
         {
