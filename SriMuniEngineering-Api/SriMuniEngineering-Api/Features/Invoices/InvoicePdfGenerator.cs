@@ -318,7 +318,6 @@ public static class InvoicePdfGenerator
                     col.Item().Text("Declaration").Bold().FontSize(11);
                     col.Item().Text("We declare that this invoice shows the actual price of the").FontSize(10);
                     col.Item().Text("goods described and that all particulars are true and correct.").FontSize(10);
-                    col.Item().PaddingTop(40).Text("Customer's Seal and Signature").FontSize(10);
                 });
 
                 row.RelativeItem().PaddingLeft(35).Column(col =>
@@ -328,8 +327,17 @@ public static class InvoicePdfGenerator
                     col.Item().Text($"Bank Name : {company["BankName"]}").FontSize(10);
                     col.Item().Text($"A/c No. : {company["AccountNo"]}").FontSize(10);
                     col.Item().Text($"Branch & IFS Code : {company["BankBranch"]} & {company["BranchIfsc"]}").FontSize(10);
-                    col.Item().PaddingTop(40).AlignRight().Text($"for {company["Name"]}").Bold().FontSize(11);
-                    col.Item().AlignRight().Text("Authorised Signatory").FontSize(10);
+                });
+            });
+
+            column.Item().PaddingTop(15).Row(row =>
+            {
+                row.RelativeItem().AlignBottom().Text("Customer's Seal and Signature").FontSize(10);
+
+                row.RelativeItem().PaddingLeft(35).Column(col =>
+                {
+                    col.Item().AlignRight().Text($"for {company["Name"]}").Bold().FontSize(11);
+                    col.Item().PaddingTop(40).AlignRight().Text("Authorised Signatory").FontSize(10);
                 });
             });
         });
