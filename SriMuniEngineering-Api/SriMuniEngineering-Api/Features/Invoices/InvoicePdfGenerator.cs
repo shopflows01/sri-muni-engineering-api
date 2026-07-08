@@ -82,6 +82,7 @@ public static class InvoicePdfGenerator
             {
                 row.RelativeItem().BorderRight(0.5f).Padding(3).Column(col =>
                 {
+                    col.Spacing(2);
                     col.Item().Text(company["Name"]!).Bold().FontSize(14);
                     col.Item().Text($"{company["Address1"]}").FontSize(11);
                     col.Item().Text($"{company["Address2"]}").FontSize(11);
@@ -132,6 +133,7 @@ public static class InvoicePdfGenerator
 
             column.Item().Border(0.5f).BorderTop(0).Padding(3).Column(col =>
             {
+                col.Spacing(2);
                 col.Item().Text("Buyer (Bill To)").FontSize(10).Italic();
                 col.Item().Text(invoice.Customer.Name).Bold().FontSize(12);
                 col.Item().Text(invoice.Customer.BillingAddress).FontSize(11);
@@ -208,7 +210,7 @@ public static class InvoicePdfGenerator
 
                 for (uint col = 1; col <= 7; col++)
                 {
-                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(30);
+                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(80);
                 }
 
                 table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(4).AlignRight().Text("Total").Bold().FontSize(12);
@@ -316,17 +318,17 @@ public static class InvoicePdfGenerator
                     col.Item().Text("Declaration").Bold().FontSize(11);
                     col.Item().Text("We declare that this invoice shows the actual price of the").FontSize(10);
                     col.Item().Text("goods described and that all particulars are true and correct.").FontSize(10);
-                    col.Item().PaddingTop(20).Text("Customer's Seal and Signature").FontSize(10);
+                    col.Item().PaddingTop(40).Text("Customer's Seal and Signature").FontSize(10);
                 });
 
-                row.RelativeItem().PaddingLeft(20).Column(col =>
+                row.RelativeItem().PaddingLeft(35).Column(col =>
                 {
                     col.Item().Text("Company's Bank Details").Bold().FontSize(11);
                     col.Item().Text($"A/c Holder's Name : {company["Name"]}").FontSize(10);
                     col.Item().Text($"Bank Name : {company["BankName"]}").FontSize(10);
                     col.Item().Text($"A/c No. : {company["AccountNo"]}").FontSize(10);
                     col.Item().Text($"Branch & IFS Code : {company["BankBranch"]} & {company["BranchIfsc"]}").FontSize(10);
-                    col.Item().PaddingTop(20).AlignRight().Text($"for {company["Name"]}").Bold().FontSize(11);
+                    col.Item().PaddingTop(40).AlignRight().Text($"for {company["Name"]}").Bold().FontSize(11);
                     col.Item().AlignRight().Text("Authorised Signatory").FontSize(10);
                 });
             });
