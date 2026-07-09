@@ -42,7 +42,7 @@ public static class InvoicePdfGenerator
 
                     page.Header().Element(header => ComposeHeader(header, label));
                     page.Content().Element(content => ComposeContent(content, invoice, companyProfile));
-                    page.Footer().AlignCenter().Text("SUBJECT TO HOSUR JURISDICTION").FontSize(9).Bold();
+                    page.Footer().AlignCenter().Text("SUBJECT TO HOSUR JURISDICTION").FontSize(9);
                 });
             }
         });
@@ -255,12 +255,30 @@ public static class InvoicePdfGenerator
 
                 table.Header(header =>
                 {
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("HSN/SAC").Bold().FontSize(8);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("Taxable\nValue").Bold().FontSize(8);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("Central Tax\nRate & Amt").Bold().FontSize(8);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("State Tax\nRate & Amt").Bold().FontSize(8);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text("Integrated Tax\nRate & Amt").Bold().FontSize(8);
-                    header.Cell().BorderBottom(0.5f).Padding(2).AlignCenter().Text("Total Tax\nAmount").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("HSN/SAC").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("Taxable\nValue").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Column(col => {
+                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("Central Tax").Bold().FontSize(8);
+                        col.Item().Row(r => {
+                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").Bold().FontSize(7);
+                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").Bold().FontSize(7);
+                        });
+                    });
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Column(col => {
+                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("State Tax").Bold().FontSize(8);
+                        col.Item().Row(r => {
+                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").Bold().FontSize(7);
+                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").Bold().FontSize(7);
+                        });
+                    });
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Column(col => {
+                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("Integrated Tax").Bold().FontSize(8);
+                        col.Item().Row(r => {
+                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").Bold().FontSize(7);
+                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").Bold().FontSize(7);
+                        });
+                    });
+                    header.Cell().BorderBottom(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("Total Tax\nAmount").Bold().FontSize(8);
                 });
 
                 bool isInterState = company["StateCode"] != invoice.Customer.StateCode.ToString();
@@ -280,33 +298,42 @@ public static class InvoicePdfGenerator
                     totalSgst += sgstAmt;
                     totalIgst += igstAmt;
 
-                    table.Cell().BorderRight(0.5f).Padding(2).AlignCenter().Text(group.HsnSac).FontSize(8);
-                    table.Cell().BorderRight(0.5f).Padding(2).AlignRight().Text(group.TaxableValue.ToString("N2")).FontSize(8);
+                    table.Cell().BorderRight(0.5f).Padding(2).AlignMiddle().AlignCenter().Text(group.HsnSac).FontSize(8);
+                    table.Cell().BorderRight(0.5f).Padding(2).AlignMiddle().AlignRight().Text(group.TaxableValue.ToString("N2")).FontSize(8);
                     
-                    table.Cell().BorderRight(0.5f).Padding(2).AlignCenter().Column(col => {
-                        if (cgstPercent > 0) { col.Item().Text($"{cgstPercent:F1}%").FontSize(7); col.Item().Text(cgstAmt.ToString("N2")).FontSize(8); }
-                        else col.Item().Text("-").FontSize(8);
-                    });
+                    void AddTaxCell(decimal pct, decimal amt) {
+                        table.Cell().BorderRight(0.5f).Row(r => {
+                            if (pct > 0) {
+                                r.RelativeItem().BorderRight(0.5f).AlignMiddle().AlignCenter().Text($"{pct:F1}%").FontSize(8);
+                                r.RelativeItem().PaddingRight(2).AlignMiddle().AlignRight().Text(amt.ToString("N2")).FontSize(8);
+                            } else {
+                                r.RelativeItem().BorderRight(0.5f).AlignMiddle().AlignCenter().Text("-").FontSize(8);
+                                r.RelativeItem().PaddingRight(2).AlignMiddle().AlignRight().Text("-").FontSize(8);
+                            }
+                        });
+                    }
+
+                    AddTaxCell(cgstPercent, cgstAmt);
+                    AddTaxCell(sgstPercent, sgstAmt);
+                    AddTaxCell(igstPercent, igstAmt);
                     
-                    table.Cell().BorderRight(0.5f).Padding(2).AlignCenter().Column(col => {
-                        if (sgstPercent > 0) { col.Item().Text($"{sgstPercent:F1}%").FontSize(7); col.Item().Text(sgstAmt.ToString("N2")).FontSize(8); }
-                        else col.Item().Text("-").FontSize(8);
-                    });
-                    
-                    table.Cell().BorderRight(0.5f).Padding(2).AlignCenter().Column(col => {
-                        if (igstPercent > 0) { col.Item().Text($"{igstPercent:F1}%").FontSize(7); col.Item().Text(igstAmt.ToString("N2")).FontSize(8); }
-                        else col.Item().Text("-").FontSize(8);
-                    });
-                    
-                    table.Cell().Padding(2).AlignRight().Text(group.TaxAmount.ToString("N2")).FontSize(8);
+                    table.Cell().Padding(2).AlignMiddle().AlignRight().Text(group.TaxAmount.ToString("N2")).FontSize(8);
                 }
 
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignRight().Text("Total").Bold().FontSize(9);
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignRight().Text(invoice.SubTotal.ToString("N2")).Bold().FontSize(9);
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text(totalCgst > 0 ? totalCgst.ToString("N2") : "-").Bold().FontSize(9);
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text(totalSgst > 0 ? totalSgst.ToString("N2") : "-").Bold().FontSize(9);
-                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignCenter().Text(totalIgst > 0 ? totalIgst.ToString("N2") : "-").Bold().FontSize(9);
-                table.Cell().BorderTop(0.5f).Padding(2).AlignRight().Text(invoice.GSTAmount.ToString("N2")).Bold().FontSize(9);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignMiddle().AlignRight().Text("Total").Bold().FontSize(9);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(2).AlignMiddle().AlignRight().Text(invoice.SubTotal.ToString("N2")).Bold().FontSize(9);
+                
+                void AddTotalTaxCell(decimal amt) {
+                    table.Cell().BorderTop(0.5f).BorderRight(0.5f).Row(r => {
+                        r.RelativeItem().BorderRight(0.5f).AlignMiddle().AlignCenter().Text("").FontSize(9);
+                        r.RelativeItem().PaddingRight(2).AlignMiddle().AlignRight().Text(amt > 0 ? amt.ToString("N2") : "-").Bold().FontSize(9);
+                    });
+                }
+                AddTotalTaxCell(totalCgst);
+                AddTotalTaxCell(totalSgst);
+                AddTotalTaxCell(totalIgst);
+
+                table.Cell().BorderTop(0.5f).Padding(2).AlignMiddle().AlignRight().Text(invoice.GSTAmount.ToString("N2")).Bold().FontSize(9);
             });
 
             column.Item().PaddingTop(10).Border(0.5f).Column(bottomBorderBox => 
