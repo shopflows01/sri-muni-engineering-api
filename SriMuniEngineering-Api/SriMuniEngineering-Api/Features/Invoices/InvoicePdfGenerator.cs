@@ -22,13 +22,13 @@ public static class InvoicePdfGenerator
         bool duplicateForTransporter,
         bool triplicateForSupplier)
     {
-        var labels = new List<string?>();
+        var labels = new List<string>();
 
         if (originalForRecipient) labels.Add("ORIGINAL FOR RECIPIENT");
         if (duplicateForTransporter) labels.Add("DUPLICATE FOR TRANSPORTER");
         if (triplicateForSupplier) labels.Add("TRIPLICATE FOR SUPPLIER");
 
-        if (labels.Count == 0) labels.Add(null);
+        if (labels.Count == 0) labels.Add("");
 
         var document = Document.Create(container =>
         {
@@ -50,7 +50,7 @@ public static class InvoicePdfGenerator
         return document.GeneratePdf();
     }
 
-    private static void ComposeHeader(IContainer container, string? copyLabel)
+    private static void ComposeHeader(IContainer container, string copyLabel)
     {
         container.Column(col =>
         {
@@ -211,7 +211,7 @@ public static class InvoicePdfGenerator
 
                 for (uint col = 1; col <= 7; col++)
                 {
-                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(160);
+                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(135);
                 }
 
                 table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(11);
@@ -225,7 +225,7 @@ public static class InvoicePdfGenerator
                     col.Item().Text("Amount Chargeable (in words)").FontSize(9).Italic();
                     col.Item().Text(invoice.AmountInWords ?? "").Bold().FontSize(11);
                 });
-                row.AutoItem().AlignRight().Text("E. & O.E").Bold().FontSize(10);
+                row.AutoItem().AlignRight().Text("E. & O.E").FontSize(10);
             });
 
             var taxGroups = invoice.Items
