@@ -146,6 +146,21 @@ public class InvoiceService
             .FirstOrDefaultAsync(i => i.Id == id)
             ?? throw new KeyNotFoundException($"Invoice with ID {id} not found.");
 
+        // Revert old outward quantities
+        if (!string.IsNullOrEmpty(invoice.DeliveryNoteNo))
+        {
+            foreach (var oldItem in invoice.Items)
+            {
+                var ledgerToRevert = await _context.JobWorkLedgers
+                    .FirstOrDefaultAsync(l => l.DcNo == invoice.DeliveryNoteNo && l.ProductId == oldItem.ProductId);
+                    
+                if (ledgerToRevert != null)
+                {
+                    ledgerToRevert.OutwardQty -= (int)oldItem.Quantity;
+                }
+            }
+        }
+
         // Remove existing items
         _context.InvoiceItems.RemoveRange(invoice.Items);
 
@@ -202,6 +217,22 @@ public class InvoiceService
         invoice.StoredFilePath = null;
 
         _context.InvoiceItems.AddRange(invoiceItems);
+
+        // Apply new outward quantities
+        if (!string.IsNullOrEmpty(request.DeliveryNoteNo))
+        {
+            foreach (var newItem in invoiceItems)
+            {
+                var ledgerToApply = await _context.JobWorkLedgers
+                    .FirstOrDefaultAsync(l => l.DcNo == request.DeliveryNoteNo && l.ProductId == newItem.ProductId);
+                    
+                if (ledgerToApply != null)
+                {
+                    ledgerToApply.OutwardQty += (int)newItem.Quantity;
+                }
+            }
+        }
+
         await _context.SaveChangesAsync();
 
         return await GetByIdAsync(invoice.Id);
