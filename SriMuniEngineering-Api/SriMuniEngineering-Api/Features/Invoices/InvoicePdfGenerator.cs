@@ -211,7 +211,7 @@ public static class InvoicePdfGenerator
 
                 for (uint col = 1; col <= 7; col++)
                 {
-                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(120);
+                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(160);
                 }
 
                 table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(11);
@@ -241,7 +241,7 @@ public static class InvoicePdfGenerator
                 .ThenBy(g => g.GSTPercent)
                 .ToList();
 
-            column.Item().PaddingTop(3).Border(0.5f).Table(table =>
+            column.Item().PaddingTop(10).Border(0.5f).Table(table =>
             {
                 table.ColumnsDefinition(columns =>
                 {
@@ -309,16 +309,16 @@ public static class InvoicePdfGenerator
                 table.Cell().BorderTop(0.5f).Padding(2).AlignRight().Text(invoice.GSTAmount.ToString("N2")).Bold().FontSize(9);
             });
 
-            column.Item().PaddingTop(6).Border(0.5f).Padding(5).Column(bottomBorderBox => 
+            column.Item().PaddingTop(10).Border(0.5f).Column(bottomBorderBox => 
             {
                 var taxWords = ConvertToWords(invoice.GSTAmount);
-                bottomBorderBox.Item().Text(text => 
+                bottomBorderBox.Item().Padding(5).Text(text => 
                 {
                      text.Span("Tax Amount (in words) : ").FontSize(9).Italic();
                      text.Span(taxWords).Bold().FontSize(10);
                 });
 
-                bottomBorderBox.Item().PaddingTop(8).Row(row =>
+                bottomBorderBox.Item().Padding(5).PaddingBottom(10).Row(row =>
                 {
                     row.RelativeItem().Column(col =>
                     {
@@ -327,7 +327,7 @@ public static class InvoicePdfGenerator
                         col.Item().Text("goods described and that all particulars are true and correct.").FontSize(9);
                     });
 
-                    row.RelativeItem().PaddingLeft(50).Column(col =>
+                    row.RelativeItem().PaddingLeft(75).Column(col =>
                     {
                         col.Item().Text("Company's Bank Details").Bold().FontSize(10);
                         col.Item().Text($"A/c Holder's Name : {company["Name"]}").FontSize(9);
@@ -337,14 +337,14 @@ public static class InvoicePdfGenerator
                     });
                 });
 
-                bottomBorderBox.Item().PaddingTop(15).Row(row =>
+                bottomBorderBox.Item().BorderTop(0.5f).Row(row =>
                 {
-                    row.RelativeItem().Text("Customer's Seal and Signature").FontSize(9);
+                    row.RelativeItem().Padding(5).Text("Customer's Seal and Signature").FontSize(9);
 
-                    row.RelativeItem().PaddingLeft(50).Column(col =>
+                    row.RelativeItem().BorderLeft(0.5f).Padding(5).PaddingLeft(75).Column(col =>
                     {
                         col.Item().AlignRight().Text($"for {company["Name"]}").Bold().FontSize(10);
-                        col.Item().PaddingTop(40).AlignRight().Text("Authorised Signatory").FontSize(9);
+                        col.Item().PaddingTop(60).AlignRight().Text("Authorised Signatory").FontSize(9);
                     });
                 });
             });
