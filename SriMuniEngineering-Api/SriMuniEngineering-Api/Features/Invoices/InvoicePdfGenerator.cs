@@ -309,40 +309,43 @@ public static class InvoicePdfGenerator
                 table.Cell().BorderTop(0.5f).Padding(2).AlignRight().Text(invoice.GSTAmount.ToString("N2")).Bold().FontSize(9);
             });
 
-            var taxWords = ConvertToWords(invoice.GSTAmount);
-            column.Item().PaddingTop(3).Text(text => 
+            column.Item().PaddingTop(6).Border(0.5f).Padding(5).Column(bottomBorderBox => 
             {
-                 text.Span("Tax Amount (in words) : ").FontSize(9).Italic();
-                 text.Span(taxWords).Bold().FontSize(10);
-            });
-
-            column.Item().PaddingTop(5).Row(row =>
-            {
-                row.RelativeItem().Column(col =>
+                var taxWords = ConvertToWords(invoice.GSTAmount);
+                bottomBorderBox.Item().Text(text => 
                 {
-                    col.Item().Text("Declaration").Bold().FontSize(10);
-                    col.Item().Text("We declare that this invoice shows the actual price of the").FontSize(9);
-                    col.Item().Text("goods described and that all particulars are true and correct.").FontSize(9);
+                     text.Span("Tax Amount (in words) : ").FontSize(9).Italic();
+                     text.Span(taxWords).Bold().FontSize(10);
                 });
 
-                row.RelativeItem().PaddingLeft(35).Column(col =>
+                bottomBorderBox.Item().PaddingTop(8).Row(row =>
                 {
-                    col.Item().Text("Company's Bank Details").Bold().FontSize(10);
-                    col.Item().Text($"A/c Holder's Name : {company["Name"]}").FontSize(9);
-                    col.Item().Text($"Bank Name : {company["BankName"]}").FontSize(9);
-                    col.Item().Text($"A/c No. : {company["AccountNo"]}").FontSize(9);
-                    col.Item().Text($"Branch & IFS Code : {company["BankBranch"]} & {company["BranchIfsc"]}").FontSize(9);
+                    row.RelativeItem().Column(col =>
+                    {
+                        col.Item().Text("Declaration").Bold().FontSize(10);
+                        col.Item().Text("We declare that this invoice shows the actual price of the").FontSize(9);
+                        col.Item().Text("goods described and that all particulars are true and correct.").FontSize(9);
+                    });
+
+                    row.RelativeItem().PaddingLeft(50).Column(col =>
+                    {
+                        col.Item().Text("Company's Bank Details").Bold().FontSize(10);
+                        col.Item().Text($"A/c Holder's Name : {company["Name"]}").FontSize(9);
+                        col.Item().Text($"Bank Name : {company["BankName"]}").FontSize(9);
+                        col.Item().Text($"A/c No. : {company["AccountNo"]}").FontSize(9);
+                        col.Item().Text($"Branch & IFS Code : {company["BankBranch"]} & {company["BranchIfsc"]}").FontSize(9);
+                    });
                 });
-            });
 
-            column.Item().PaddingTop(15).Row(row =>
-            {
-                row.RelativeItem().Text("Customer's Seal and Signature").FontSize(9);
-
-                row.RelativeItem().PaddingLeft(35).Column(col =>
+                bottomBorderBox.Item().PaddingTop(15).Row(row =>
                 {
-                    col.Item().AlignRight().Text($"for {company["Name"]}").Bold().FontSize(10);
-                    col.Item().PaddingTop(40).AlignRight().Text("Authorised Signatory").FontSize(9);
+                    row.RelativeItem().Text("Customer's Seal and Signature").FontSize(9);
+
+                    row.RelativeItem().PaddingLeft(50).Column(col =>
+                    {
+                        col.Item().AlignRight().Text($"for {company["Name"]}").Bold().FontSize(10);
+                        col.Item().PaddingTop(40).AlignRight().Text("Authorised Signatory").FontSize(9);
+                    });
                 });
             });
         });
