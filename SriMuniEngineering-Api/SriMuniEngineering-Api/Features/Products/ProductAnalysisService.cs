@@ -221,13 +221,12 @@ public class ProductAnalysisService
         titleRange.Merge();
         
         var richText = ws.Cell("A1").GetRichText();
-        richText.AddText("From: ");
-        richText.AddText(customerName).SetFontColor(XLColor.Purple);
-        richText.AddText(Environment.NewLine + "To: ");
-        richText.AddText("Sri Valli Industries").SetFontColor(XLColor.Purple);
+        richText.ClearText();
+        richText.AddText("From: ").SetFontName("Calibri").SetFontSize(12).SetFontColor(XLColor.Black).SetBold(false);
+        richText.AddText(customerName).SetFontName("Calibri").SetFontSize(16).SetFontColor(XLColor.Purple).SetBold(true);
+        richText.AddText(Environment.NewLine + "To: ").SetFontName("Calibri").SetFontSize(12).SetFontColor(XLColor.Black).SetBold(false);
+        richText.AddText("SRI VALLI INDUSTRIES").SetFontName("Calibri").SetFontSize(16).SetFontColor(XLColor.Purple).SetBold(true);
         
-        ws.Cell("A1").Style.Font.Bold = true;
-        ws.Cell("A1").Style.Font.FontSize = 14;
         ws.Cell("A1").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         ws.Cell("A1").Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         ws.Cell("A1").Style.Alignment.WrapText = true;
