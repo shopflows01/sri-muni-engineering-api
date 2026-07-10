@@ -63,23 +63,29 @@ public class DashboardService
             .OrderBy(x => x.Date)
             .ToListAsync();
 
-        var dailyInwardChart = dailyData.Select(d => new DailyQuantityPoint
-        {
-            Date = DateOnly.FromDateTime(d.Date),
-            Quantity = d.Inward
-        }).ToList();
+        var dailyInwardChart = dailyData
+            .Where(d => d.Inward > 0)
+            .Select(d => new DailyQuantityPoint
+            {
+                Date = DateOnly.FromDateTime(d.Date),
+                Quantity = d.Inward
+            }).ToList();
 
-        var dailyOutwardChart = dailyData.Select(d => new DailyQuantityPoint
-        {
-            Date = DateOnly.FromDateTime(d.Date),
-            Quantity = d.Outward
-        }).ToList();
+        var dailyOutwardChart = dailyData
+            .Where(d => d.Outward > 0)
+            .Select(d => new DailyQuantityPoint
+            {
+                Date = DateOnly.FromDateTime(d.Date),
+                Quantity = d.Outward
+            }).ToList();
 
-        var dailyRejectionChart = dailyData.Select(d => new DailyQuantityPoint
-        {
-            Date = DateOnly.FromDateTime(d.Date),
-            Quantity = d.Rejected
-        }).ToList();
+        var dailyRejectionChart = dailyData
+            .Where(d => d.Rejected > 0)
+            .Select(d => new DailyQuantityPoint
+            {
+                Date = DateOnly.FromDateTime(d.Date),
+                Quantity = d.Rejected
+            }).ToList();
 
         // ─── Chart: Monthly Revenue (last 6 months) ──────────
         var sixMonthsAgo = today.AddMonths(-6);

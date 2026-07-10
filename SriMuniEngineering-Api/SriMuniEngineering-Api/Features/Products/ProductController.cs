@@ -95,5 +95,19 @@ public class ProductController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
+    [HttpGet("{id:guid}/export")]
+    public async Task<IActionResult> ExportProductLedger(Guid id, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+    {
+        try
+        {
+            var fileContent = await _analysisService.GenerateExcelLedgerAsync(id, fromDate, toDate);
+            return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"AnalysisReport.xlsx");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }
 

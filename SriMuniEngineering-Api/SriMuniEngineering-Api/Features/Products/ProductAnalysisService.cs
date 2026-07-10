@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using SriMuniEngineering_Api.Features.Products.Dtos;
 using SriMuniEngineering_Api.Infrastructure.Data;
+using ClosedXML.Excel;
+using System.IO;
 
 namespace SriMuniEngineering_Api.Features.Products;
 
@@ -155,5 +157,161 @@ public class ProductAnalysisService
         }
 
         return movements.OrderByDescending(m => m.DcDate).ToList();
+    }
+
+    public async Task<byte[]> GenerateExcelLedgerAsync(Guid productId, DateTime? fromDate, DateTime? toDate)
+    {
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId)
+            ?? throw new KeyNotFoundException($"Product with ID {productId} not found.");
+
+        // Gather DCs
+        var dcItemsQuery = _context.JobWorkDCItems
+            .Include(i => i.JobWorkDC)
+                .ThenInclude(d => d.Customer)
+            .Include(i => i.Transactions)
+            .Where(i => i.ProductId == productId);
+            
+        var dcItems = await dcItemsQuery.ToListAsync();
+        
+        var invoicesQuery = _context.InvoiceItems
+            .Include(ii => ii.Invoice)
+                .ThenInclude(i => i.Customer)
+            .Where(ii => ii.ProductId == productId);
+            
+        var invoiceItems = await invoicesQuery.ToListAsync();
+
+        var customerName = dcItems.FirstOrDefault()?.JobWorkDC?.Customer?.Name 
+            ?? invoiceItems.FirstOrDefault()?.Invoice?.Customer?.Name 
+            ?? "Unknown Customer";
+
+        // Filter by date
+        var filteredDcs = dcItems
+            .Where(i => !fromDate.HasValue || i.JobWorkDC.DcDate >= fromDate.Value)
+            .Where(i => !toDate.HasValue || i.JobWorkDC.DcDate <= toDate.Value)
+            .Select(i => new { 
+                Date = i.JobWorkDC.DcDate, 
+                No = i.JobWorkDC.DcNo, 
+                Qty = i.Transactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Inward).Sum(t => t.Quantity) 
+            })
+            .Where(x => x.Qty > 0)
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        var filteredInvoices = invoiceItems
+            .Where(ii => !fromDate.HasValue || ii.Invoice.Date >= fromDate.Value)
+            .Where(ii => !toDate.HasValue || ii.Invoice.Date <= toDate.Value)
+            .Select(ii => new { 
+                Date = ii.Invoice.Date, 
+                No = ii.Invoice.InvoiceNo, 
+                Qty = ii.Quantity 
+            })
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        // Totals
+        var totalInward = filteredDcs.Sum(d => d.Qty);
+        var totalOutward = filteredInvoices.Sum(i => i.Qty);
+        var balance = totalInward - totalOutward;
+
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("Ledger");
+
+        // Row 1 & 2 Merge A-F
+        var titleRange = ws.Range("A1:F2");
+        titleRange.Merge();
+        titleRange.Value = $"From: {customerName} - To: Sri Valli Industries";
+        titleRange.Style.Font.Bold = true;
+        titleRange.Style.Font.FontSize = 14;
+        titleRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        titleRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+        // Insert Image
+        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "frontend", "public", "assets", "excel-logo.png");
+        if (System.IO.File.Exists(logoPath))
+        {
+            var picture = ws.AddPicture(logoPath);
+            picture.MoveTo(ws.Cell("A1"));
+            picture.Scale(0.8); // Adjust scale
+        }
+
+        // Row 3 Merge A-F
+        var productRange = ws.Range("A3:F3");
+        productRange.Merge();
+        productRange.Value = $"{product.PartName} - {product.PartNo}";
+        productRange.Style.Font.Bold = true;
+        productRange.Style.Font.FontSize = 12;
+        productRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        // Row 4 Headers
+        ws.Cell("A4").Value = "DC Date";
+        ws.Cell("B4").Value = "DC No";
+        ws.Cell("C4").Value = "Qty";
+        ws.Cell("D4").Value = "Invoice Date";
+        ws.Cell("E4").Value = "Invoice No";
+        ws.Cell("F4").Value = "Qty";
+        
+        var headerRange = ws.Range("A4:F4");
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+        headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        int maxRows = Math.Max(filteredDcs.Count, filteredInvoices.Count);
+        int currentRow = 5;
+
+        for (int i = 0; i < maxRows; i++)
+        {
+            if (i < filteredDcs.Count)
+            {
+                ws.Cell(currentRow, 1).Value = filteredDcs[i].Date.ToString("dd-MMM-yyyy");
+                ws.Cell(currentRow, 2).Value = filteredDcs[i].No;
+                ws.Cell(currentRow, 3).Value = filteredDcs[i].Qty;
+            }
+            if (i < filteredInvoices.Count)
+            {
+                ws.Cell(currentRow, 4).Value = filteredInvoices[i].Date.ToString("dd-MMM-yyyy");
+                ws.Cell(currentRow, 5).Value = filteredInvoices[i].No;
+                ws.Cell(currentRow, 6).Value = filteredInvoices[i].Qty;
+            }
+            currentRow++;
+        }
+
+        // Totals
+        ws.Cell(currentRow, 2).Value = "Total:";
+        ws.Cell(currentRow, 2).Style.Font.Bold = true;
+        ws.Cell(currentRow, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+        ws.Cell(currentRow, 3).Value = totalInward;
+        ws.Cell(currentRow, 3).Style.Font.Bold = true;
+
+        ws.Cell(currentRow, 5).Value = "Total:";
+        ws.Cell(currentRow, 5).Style.Font.Bold = true;
+        ws.Cell(currentRow, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+        ws.Cell(currentRow, 6).Value = totalOutward;
+        ws.Cell(currentRow, 6).Style.Font.Bold = true;
+        
+        currentRow++;
+
+        // Balance Stock
+        var balanceRange = ws.Range($"A{currentRow}:E{currentRow}");
+        balanceRange.Merge();
+        balanceRange.Value = "Balance Stock:";
+        balanceRange.Style.Font.Bold = true;
+        balanceRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+        ws.Cell(currentRow, 6).Value = balance;
+        ws.Cell(currentRow, 6).Style.Font.Bold = true;
+
+        // Apply Borders
+        var dataRange = ws.Range($"A1:F{currentRow}");
+        dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+        ws.Columns(1, 6).AdjustToContents();
+
+        // Print settings
+        ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
+        ws.PageSetup.FitToPages(1, 0);
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
     }
 }
