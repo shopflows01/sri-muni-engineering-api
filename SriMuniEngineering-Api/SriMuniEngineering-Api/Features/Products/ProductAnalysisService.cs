@@ -216,14 +216,21 @@ public class ProductAnalysisService
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Ledger");
 
-        // Row 1 & 2 Merge A-F
-        var titleRange = ws.Range("A1:F2");
+        // Row 1-3 Merge A-F
+        var titleRange = ws.Range("A1:F3");
         titleRange.Merge();
-        titleRange.Value = $"From: {customerName} - To: Sri Valli Industries";
-        titleRange.Style.Font.Bold = true;
-        titleRange.Style.Font.FontSize = 14;
-        titleRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        titleRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        
+        var richText = ws.Cell("A1").GetRichText();
+        richText.AddText("From: ");
+        richText.AddText(customerName).SetFontColor(XLColor.Purple);
+        richText.AddText(Environment.NewLine + "To: ");
+        richText.AddText("Sri Valli Industries").SetFontColor(XLColor.Purple);
+        
+        ws.Cell("A1").Style.Font.Bold = true;
+        ws.Cell("A1").Style.Font.FontSize = 14;
+        ws.Cell("A1").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        ws.Cell("A1").Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        ws.Cell("A1").Style.Alignment.WrapText = true;
 
         // Insert Image
         var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "frontend", "public", "assets", "excel-logo.png");
@@ -234,29 +241,29 @@ public class ProductAnalysisService
             picture.Scale(0.8); // Adjust scale
         }
 
-        // Row 3 Merge A-F
-        var productRange = ws.Range("A3:F3");
+        // Row 4 Merge A-F
+        var productRange = ws.Range("A4:F4");
         productRange.Merge();
         productRange.Value = $"{product.PartName} - {product.PartNo}";
         productRange.Style.Font.Bold = true;
         productRange.Style.Font.FontSize = 12;
         productRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-        // Row 4 Headers
-        ws.Cell("A4").Value = "DC Date";
-        ws.Cell("B4").Value = "DC No";
-        ws.Cell("C4").Value = "Qty";
-        ws.Cell("D4").Value = "Invoice Date";
-        ws.Cell("E4").Value = "Invoice No";
-        ws.Cell("F4").Value = "Qty";
+        // Row 5 Headers
+        ws.Cell("A5").Value = "DC Date";
+        ws.Cell("B5").Value = "DC No";
+        ws.Cell("C5").Value = "Qty";
+        ws.Cell("D5").Value = "Invoice Date";
+        ws.Cell("E5").Value = "Invoice No";
+        ws.Cell("F5").Value = "Qty";
         
-        var headerRange = ws.Range("A4:F4");
+        var headerRange = ws.Range("A5:F5");
         headerRange.Style.Font.Bold = true;
         headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
         int maxRows = Math.Max(filteredDcs.Count, filteredInvoices.Count);
-        int currentRow = 5;
+        int currentRow = 6;
 
         for (int i = 0; i < maxRows; i++)
         {
@@ -295,9 +302,11 @@ public class ProductAnalysisService
         balanceRange.Merge();
         balanceRange.Value = "Balance Stock:";
         balanceRange.Style.Font.Bold = true;
+        balanceRange.Style.Font.FontColor = XLColor.Red;
         balanceRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
         ws.Cell(currentRow, 6).Value = balance;
         ws.Cell(currentRow, 6).Style.Font.Bold = true;
+        ws.Cell(currentRow, 6).Style.Font.FontColor = XLColor.Red;
 
         // Apply Borders
         var dataRange = ws.Range($"A1:F{currentRow}");
