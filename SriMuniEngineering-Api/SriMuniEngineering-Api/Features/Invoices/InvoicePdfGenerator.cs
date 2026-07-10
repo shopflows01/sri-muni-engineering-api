@@ -208,19 +208,19 @@ public static class InvoicePdfGenerator
                     }
                 }
 
-                for (uint col = 1; col <= 7; col++)
-                {
-                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(20);
+                void AddEmptyRow(float height) {
+                    for (int i = 0; i < 7; i++) {
+                        table.Cell().BorderRight(i == 6 ? 0 : 0.5f).MinHeight(height);
+                    }
                 }
+
+                AddEmptyRow(20);
 
                 AddTaxRow("CGST", totalCgst);
                 AddTaxRow("SGST", totalSgst);
                 AddTaxRow("IGST", totalIgst);
 
-                for (uint col = 1; col <= 7; col++)
-                {
-                    table.Cell().Column(col).BorderRight(col == 7 ? 0 : 0.5f).MinHeight(120);
-                }
+                AddEmptyRow(120);
 
                 table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(11);
                 table.Cell().BorderTop(0.5f).Padding(3).AlignRight().Text($"₹ {invoice.GrandTotal:N2}").Bold().FontSize(11);
