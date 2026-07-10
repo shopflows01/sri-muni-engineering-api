@@ -220,7 +220,7 @@ public static class InvoicePdfGenerator
                 AddTaxRow("SGST", totalSgst);
                 AddTaxRow("IGST", totalIgst);
 
-                AddEmptyRow(110);
+                AddEmptyRow(130);
 
                 table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(11);
                 table.Cell().BorderTop(0.5f).Padding(3).AlignRight().Text($"₹ {invoice.GrandTotal:N2}").Bold().FontSize(11);
@@ -344,28 +344,28 @@ public static class InvoicePdfGenerator
                 table.Cell().BorderTop(0.5f).Padding(2).AlignMiddle().AlignRight().Text(invoice.GSTAmount.ToString("N2")).Bold().FontSize(9);
             });
 
-            column.Item().PaddingTop(10).Border(0.5f).Column(bottomBorderBox => 
+            column.Item().PaddingTop(5).Border(0.5f).Column(bottomBorderBox => 
             {
                 var taxWords = ConvertToWords(invoice.GSTAmount);
 
-                bottomBorderBox.Item().Padding(5).PaddingBottom(10).Row(row =>
+                bottomBorderBox.Item().PaddingHorizontal(5).PaddingTop(2).PaddingBottom(10).Row(row =>
                 {
                     row.RelativeItem().Column(col =>
                     {
-                        col.Item().PaddingBottom(8).Text(text => 
+                        col.Item().Text(text => 
                         {
                              text.Span("Tax Amount (in words) : \n").FontSize(9).Italic();
                              text.Span(taxWords).Bold().FontSize(10);
                         });
 
-                        col.Item().Text("Declaration").Bold().FontSize(10);
+                        col.Item().PaddingTop(10).Text("Declaration").Bold().FontSize(10);
                         col.Item().Text("We declare that this invoice shows the actual price of the").FontSize(9);
                         col.Item().Text("goods described and that all particulars are true and correct.").FontSize(9);
                     });
 
                     row.RelativeItem().PaddingLeft(75).Column(col =>
                     {
-                        col.Item().Text("Company's Bank Details").Bold().FontSize(10);
+                        col.Item().PaddingTop(10).Text("Company's Bank Details").Bold().FontSize(10);
                         col.Item().Text($"A/c Holder's Name : {company["Name"]}").FontSize(9);
                         col.Item().Text($"Bank Name : {company["BankName"]}").FontSize(9);
                         col.Item().Text($"A/c No. : {company["AccountNo"]}").FontSize(9);
