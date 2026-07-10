@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SriMuniEngineering_Api.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using SriMuniEngineering_Api.Infrastructure.Data;
 namespace SriMuniEngineering_Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710154528_JobWorkDCRestructure")]
+    partial class JobWorkDCRestructure
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -417,9 +420,6 @@ namespace SriMuniEngineering_Api.Migrations
 
                     b.Property<Guid>("DcId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("GstPercent")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");

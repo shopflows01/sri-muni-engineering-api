@@ -11,7 +11,9 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Product> Products => Set<Product>();
-    public DbSet<JobWorkLedger> JobWorkLedgers => Set<JobWorkLedger>();
+    public DbSet<JobWorkDC> JobWorkDCs => Set<JobWorkDC>();
+    public DbSet<JobWorkDCItem> JobWorkDCItems => Set<JobWorkDCItem>();
+    public DbSet<JobWorkTransaction> JobWorkTransactions => Set<JobWorkTransaction>();
     public DbSet<Quotation> Quotations => Set<Quotation>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
@@ -69,22 +71,51 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Unit).HasMaxLength(20).IsRequired();
         });
 
-        // ─── JobWorkLedger ────────────────────────────────────
-        modelBuilder.Entity<JobWorkLedger>(entity =>
+        // ─── JobWorkDC ────────────────────────────────────
+        modelBuilder.Entity<JobWorkDC>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DcNo).HasMaxLength(50).IsRequired();
             entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.Remarks).HasMaxLength(500);
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
 
             entity.HasOne(e => e.Customer)
-                .WithMany(c => c.JobWorkLedgers)
+                .WithMany(c => c.JobWorkDCs)
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── JobWorkDCItem ────────────────────────────────────
+        modelBuilder.Entity<JobWorkDCItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Rate).HasColumnType("decimal(18,4)");
+            entity.Property(e => e.Remarks).HasMaxLength(500);
+
+            entity.HasOne(e => e.JobWorkDC)
+                .WithMany(d => d.Items)
+                .HasForeignKey(e => e.DcId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(e => e.Product)
-                .WithMany(p => p.JobWorkLedgers)
+                .WithMany(p => p.JobWorkDCItems)
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── JobWorkTransaction ────────────────────────────────────
+        modelBuilder.Entity<JobWorkTransaction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TransactionType).HasConversion<int>();
+            entity.Property(e => e.ReferenceNo).HasMaxLength(100);
+            entity.Property(e => e.Remarks).HasMaxLength(500);
+
+            entity.HasOne(e => e.DcItem)
+                .WithMany(i => i.Transactions)
+                .HasForeignKey(e => e.DcItemId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ─── Quotation ───────────────────────────────────────
@@ -186,9 +217,9 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.InvoiceId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasOne(e => e.DcLedger)
-                .WithMany(l => l.InspectionReports)
-                .HasForeignKey(e => e.DcLedgerId)
+            entity.HasOne(e => e.DcItem)
+                .WithMany(i => i.InspectionReports)
+                .HasForeignKey(e => e.DcItemId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(e => e.Customer)

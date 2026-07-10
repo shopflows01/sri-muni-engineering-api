@@ -21,26 +21,26 @@ public class DashboardService
         var last30Days = today.AddDays(-30);
 
         // ─── Big Numbers: Today ───────────────────────────────
-        var todayLedgers = await _context.JobWorkLedgers
-            .Where(l => l.DcDate >= today && l.DcDate < today.AddDays(1))
+        var todayTransactions = await _context.JobWorkTransactions
+            .Where(t => t.TransactionDate >= today && t.TransactionDate < today.AddDays(1))
             .ToListAsync();
 
-        var todayInward = todayLedgers.Sum(l => l.InwardQty);
-        var todayOutward = todayLedgers.Sum(l => l.OutwardQty);
-        var todayRejected = todayLedgers.Sum(l => l.RejectedQty);
+        var todayInward = todayTransactions.Where(t => t.TransactionType == TransactionType.Inward).Sum(t => t.Quantity);
+        var todayOutward = todayTransactions.Where(t => t.TransactionType == TransactionType.Outward).Sum(t => t.Quantity);
+        var todayRejected = todayTransactions.Where(t => t.TransactionType == TransactionType.Rejected).Sum(t => t.Quantity);
 
         // ─── Big Numbers: Monthly ─────────────────────────────
-        var monthLedgers = await _context.JobWorkLedgers
-            .Where(l => l.DcDate >= monthStart)
+        var monthTransactions = await _context.JobWorkTransactions
+            .Where(t => t.TransactionDate >= monthStart)
             .ToListAsync();
 
-        var monthlyInward = monthLedgers.Sum(l => l.InwardQty);
-        var monthlyOutward = monthLedgers.Sum(l => l.OutwardQty);
-        var monthlyRejected = monthLedgers.Sum(l => l.RejectedQty);
+        var monthlyInward = monthTransactions.Where(t => t.TransactionType == TransactionType.Inward).Sum(t => t.Quantity);
+        var monthlyOutward = monthTransactions.Where(t => t.TransactionType == TransactionType.Outward).Sum(t => t.Quantity);
+        var monthlyRejected = monthTransactions.Where(t => t.TransactionType == TransactionType.Rejected).Sum(t => t.Quantity);
 
         // ─── Pending Counts ───────────────────────────────────
         var pendingInvoices = await _context.Invoices.CountAsync(i => i.StoredFilePath == null);
-        var inProgressLedgers = await _context.JobWorkLedgers.CountAsync(l => l.Status == LedgerStatus.InProgress);
+        var inProgressLedgers = await _context.JobWorkDCs.CountAsync(d => d.Status == LedgerStatus.InProgress);
 
         // ─── Totals ───────────────────────────────────────────
         var totalCustomers = await _context.Customers.CountAsync();
@@ -50,15 +50,15 @@ public class DashboardService
             .SumAsync(i => i.GrandTotal);
 
         // ─── Chart: Daily Inward/Outward/Rejection (last 30 days) ─
-        var dailyData = await _context.JobWorkLedgers
-            .Where(l => l.DcDate >= last30Days)
-            .GroupBy(l => l.DcDate.Date)
+        var dailyData = await _context.JobWorkTransactions
+            .Where(t => t.TransactionDate >= last30Days)
+            .GroupBy(t => t.TransactionDate.Date)
             .Select(g => new
             {
                 Date = g.Key,
-                Inward = g.Sum(x => x.InwardQty),
-                Outward = g.Sum(x => x.OutwardQty),
-                Rejected = g.Sum(x => x.RejectedQty)
+                Inward = g.Where(x => x.TransactionType == TransactionType.Inward).Sum(x => x.Quantity),
+                Outward = g.Where(x => x.TransactionType == TransactionType.Outward).Sum(x => x.Quantity),
+                Rejected = g.Where(x => x.TransactionType == TransactionType.Rejected).Sum(x => x.Quantity)
             })
             .OrderBy(x => x.Date)
             .ToListAsync();
@@ -102,8 +102,8 @@ public class DashboardService
             .ToList();
 
         // ─── Chart: Ledger Status Breakdown (pie/donut) ──────
-        var statusBreakdown = await _context.JobWorkLedgers
-            .GroupBy(l => l.Status)
+        var statusBreakdown = await _context.JobWorkDCs
+            .GroupBy(d => d.Status)
             .Select(g => new StatusBreakdown
             {
                 Status = g.Key.ToString(),
@@ -112,14 +112,18 @@ public class DashboardService
             .ToListAsync();
 
         // ─── Chart: Top 5 Customers by Volume ────────────────
-        var topCustomers = await _context.JobWorkLedgers
-            .Include(l => l.Customer)
-            .GroupBy(l => new { l.CustomerId, l.Customer.Name })
+        var topCustomers = await _context.JobWorkDCItems
+            .Include(i => i.JobWorkDC)
+                .ThenInclude(d => d.Customer)
+            .Include(i => i.Transactions)
+            .SelectMany(i => i.Transactions, (item, trans) => new { item, trans })
+            .Where(x => x.trans.TransactionType == TransactionType.Inward)
+            .GroupBy(x => new { x.item.JobWorkDC.CustomerId, x.item.JobWorkDC.Customer.Name })
             .Select(g => new TopCustomerMetric
             {
                 CustomerId = g.Key.CustomerId,
                 CustomerName = g.Key.Name,
-                TotalInwardQty = g.Sum(x => x.InwardQty),
+                TotalInwardQty = g.Sum(x => x.trans.Quantity),
                 TotalInvoices = 0
             })
             .OrderByDescending(x => x.TotalInwardQty)

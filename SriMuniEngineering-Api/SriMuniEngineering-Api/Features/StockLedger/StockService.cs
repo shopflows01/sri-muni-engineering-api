@@ -20,138 +20,153 @@ public class StockService
         _storageService = storageService;
     }
 
-    public async Task<LedgerResponse> CreateInwardAsync(InwardRequest request)
+    public async Task<JobWorkDCResponse> CreateDCAsync(CreateJobWorkDCRequest request)
     {
-        var ledger = new JobWorkLedger
+        var dc = new JobWorkDC
         {
             Id = Guid.NewGuid(),
             DcNo = request.DcNo,
             DcDate = request.DcDate,
             CustomerId = request.CustomerId,
-            ProductId = request.ProductId,
-            InwardQty = request.InwardQty,
-            OutwardQty = 0,
-            RejectedQty = 0,
+            Remarks = request.Remarks,
             Status = LedgerStatus.InProgress,
-            CreatedAt = DateTime.Now
+            CreatedDate = DateTime.Now
         };
 
-        _context.JobWorkLedgers.Add(ledger);
+        foreach (var reqItem in request.Items)
+        {
+            var item = new JobWorkDCItem
+            {
+                Id = Guid.NewGuid(),
+                DcId = dc.Id,
+                ProductId = reqItem.ProductId,
+                QtySent = reqItem.QtySent,
+                Rate = reqItem.Rate,
+                GstPercent = reqItem.GstPercent,
+                Remarks = reqItem.Remarks
+            };
+            
+            // Add inward transaction automatically for the qty sent
+            item.Transactions.Add(new JobWorkTransaction
+            {
+                Id = Guid.NewGuid(),
+                DcItemId = item.Id,
+                TransactionDate = request.DcDate,
+                TransactionType = TransactionType.Inward,
+                Quantity = reqItem.QtySent,
+                Remarks = "Initial Inward"
+            });
+
+            dc.Items.Add(item);
+        }
+
+        _context.JobWorkDCs.Add(dc);
         await _context.SaveChangesAsync();
 
-        return await GetByIdAsync(ledger.Id);
+        return await GetByIdAsync(dc.Id);
     }
 
-    public async Task<LedgerResponse> UpdateOutwardAsync(Guid id, OutwardRequest request)
+    public async Task<JobWorkDCResponse> AddTransactionAsync(Guid dcItemId, TransactionRequest request)
     {
-        var ledger = await _context.JobWorkLedgers.FindAsync(id)
-            ?? throw new KeyNotFoundException($"Ledger entry with ID {id} not found.");
+        var item = await _context.JobWorkDCItems
+            .Include(i => i.JobWorkDC)
+            .Include(i => i.Transactions)
+            .FirstOrDefaultAsync(i => i.Id == dcItemId)
+            ?? throw new KeyNotFoundException($"DC Item with ID {dcItemId} not found.");
 
-        var newOutward = ledger.OutwardQty + request.OutwardQty;
-        if (newOutward + ledger.RejectedQty > ledger.InwardQty)
-            throw new InvalidOperationException(
-                $"Total OutwardQty ({newOutward}) + RejectedQty ({ledger.RejectedQty}) cannot exceed InwardQty ({ledger.InwardQty}).");
+        var newTransaction = new JobWorkTransaction
+        {
+            Id = Guid.NewGuid(),
+            DcItemId = dcItemId,
+            TransactionDate = request.TransactionDate,
+            TransactionType = request.TransactionType,
+            Quantity = request.Quantity,
+            ReferenceNo = request.ReferenceNo,
+            Remarks = request.Remarks
+        };
 
-        ledger.OutwardQty = newOutward;
-        ledger.Status = (ledger.OutwardQty + ledger.RejectedQty == ledger.InwardQty)
-            ? LedgerStatus.ReadyForInvoice
-            : LedgerStatus.InProgress;
-
+        item.Transactions.Add(newTransaction);
+        
+        // Update DC Status if all items are fully processed (inward == outward + rejected)
         await _context.SaveChangesAsync();
-
-        return await GetByIdAsync(ledger.Id);
+        
+        return await GetByIdAsync(item.DcId);
     }
 
-    public async Task<LedgerResponse> UpdateRejectedAsync(Guid id, RejectedRequest request)
+    public async Task<JobWorkDCResponse> GetByIdAsync(Guid id)
     {
-        var ledger = await _context.JobWorkLedgers.FindAsync(id)
-            ?? throw new KeyNotFoundException($"Ledger entry with ID {id} not found.");
+        var dc = await _context.JobWorkDCs
+            .Include(d => d.Customer)
+            .Include(d => d.Items)
+                .ThenInclude(i => i.Product)
+            .Include(d => d.Items)
+                .ThenInclude(i => i.Transactions)
+            .FirstOrDefaultAsync(d => d.Id == id)
+            ?? throw new KeyNotFoundException($"DC entry with ID {id} not found.");
 
-        var newRejected = ledger.RejectedQty + request.RejectedQty;
-        if (ledger.OutwardQty + newRejected > ledger.InwardQty)
-            throw new InvalidOperationException(
-                $"OutwardQty ({ledger.OutwardQty}) + Total RejectedQty ({newRejected}) cannot exceed InwardQty ({ledger.InwardQty}).");
-
-        ledger.RejectedQty = newRejected;
-        ledger.Status = (ledger.OutwardQty + ledger.RejectedQty == ledger.InwardQty)
-            ? LedgerStatus.ReadyForInvoice
-            : LedgerStatus.InProgress;
-
-        await _context.SaveChangesAsync();
-
-        return await GetByIdAsync(ledger.Id);
-    }
-
-    public async Task<LedgerResponse> GetByIdAsync(Guid id)
-    {
-        var ledger = await _context.JobWorkLedgers
-            .Include(l => l.Customer)
-            .Include(l => l.Product)
-            .FirstOrDefaultAsync(l => l.Id == id)
-            ?? throw new KeyNotFoundException($"Ledger entry with ID {id} not found.");
-
-        return MapToResponse(ledger);
+        return MapToResponse(dc);
     }
 
     public async Task DeleteAsync(Guid id)
     {
-        var ledger = await _context.JobWorkLedgers.FindAsync(id)
-            ?? throw new KeyNotFoundException($"Ledger entry with ID {id} not found.");
+        var dc = await _context.JobWorkDCs.FindAsync(id)
+            ?? throw new KeyNotFoundException($"DC entry with ID {id} not found.");
 
-        _context.JobWorkLedgers.Remove(ledger);
+        _context.JobWorkDCs.Remove(dc);
         await _context.SaveChangesAsync();
     }
 
-    public async Task<PaginatedResponse<LedgerResponse>> GetAllAsync(StockFilterRequest filter)
+    public async Task<PaginatedResponse<JobWorkDCResponse>> GetAllAsync(StockFilterRequest filter)
     {
-        var query = _context.JobWorkLedgers
-            .Include(l => l.Customer)
-            .Include(l => l.Product)
+        var query = _context.JobWorkDCs
+            .Include(d => d.Customer)
+            .Include(d => d.Items)
+                .ThenInclude(i => i.Product)
+            .Include(d => d.Items)
+                .ThenInclude(i => i.Transactions)
             .AsQueryable();
 
         // ─── Filters ──────────────────────────────────────────
         if (!string.IsNullOrWhiteSpace(filter.DcNo))
-            query = query.Where(l => l.DcNo.Contains(filter.DcNo));
+            query = query.Where(d => d.DcNo.Contains(filter.DcNo));
 
         if (filter.CustomerId.HasValue)
-            query = query.Where(l => l.CustomerId == filter.CustomerId.Value);
-
-        if (filter.ProductId.HasValue)
-            query = query.Where(l => l.ProductId == filter.ProductId.Value);
+            query = query.Where(d => d.CustomerId == filter.CustomerId.Value);
 
         if (filter.Status.HasValue)
-            query = query.Where(l => l.Status == filter.Status.Value);
+            query = query.Where(d => d.Status == filter.Status.Value);
 
         if (filter.FromDate.HasValue)
-            query = query.Where(l => l.DcDate >= filter.FromDate.Value);
+            query = query.Where(d => d.DcDate >= filter.FromDate.Value);
 
         if (filter.ToDate.HasValue)
-            query = query.Where(l => l.DcDate <= filter.ToDate.Value);
+            query = query.Where(d => d.DcDate <= filter.ToDate.Value);
 
         if (!string.IsNullOrWhiteSpace(filter.CustomerName))
-            query = query.Where(l => l.Customer.Name.Contains(filter.CustomerName));
+            query = query.Where(d => d.Customer.Name.Contains(filter.CustomerName));
+            
+        if (filter.ProductId.HasValue)
+            query = query.Where(d => d.Items.Any(i => i.ProductId == filter.ProductId.Value));
 
         if (!string.IsNullOrWhiteSpace(filter.PartNo))
-            query = query.Where(l => l.Product.PartNo.Contains(filter.PartNo));
+            query = query.Where(d => d.Items.Any(i => i.Product.PartNo.Contains(filter.PartNo)));
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
-            query = query.Where(l =>
-                l.DcNo.Contains(filter.Search) ||
-                l.Customer.Name.Contains(filter.Search) ||
-                l.Product.PartNo.Contains(filter.Search) ||
-                l.Product.PartName.Contains(filter.Search));
+            query = query.Where(d =>
+                d.DcNo.Contains(filter.Search) ||
+                d.Customer.Name.Contains(filter.Search) ||
+                d.Items.Any(i => i.Product.PartNo.Contains(filter.Search)) ||
+                d.Items.Any(i => i.Product.PartName.Contains(filter.Search)));
 
         // ─── Sorting ──────────────────────────────────────────
         var isAsc = filter.SortDirection.Equals("asc", StringComparison.OrdinalIgnoreCase);
         query = filter.SortBy?.ToLower() switch
         {
-            "dcno" => isAsc ? query.OrderBy(l => l.DcNo) : query.OrderByDescending(l => l.DcNo),
-            "dcdate" => isAsc ? query.OrderBy(l => l.DcDate) : query.OrderByDescending(l => l.DcDate),
-            "customer" => isAsc ? query.OrderBy(l => l.Customer.Name) : query.OrderByDescending(l => l.Customer.Name),
-            "partno" => isAsc ? query.OrderBy(l => l.Product.PartNo) : query.OrderByDescending(l => l.Product.PartNo),
-            "inwardqty" => isAsc ? query.OrderBy(l => l.InwardQty) : query.OrderByDescending(l => l.InwardQty),
-            "status" => isAsc ? query.OrderBy(l => l.Status) : query.OrderByDescending(l => l.Status),
-            _ => query.OrderByDescending(l => l.CreatedAt)
+            "dcno" => isAsc ? query.OrderBy(d => d.DcNo) : query.OrderByDescending(d => d.DcNo),
+            "dcdate" => isAsc ? query.OrderBy(d => d.DcDate) : query.OrderByDescending(d => d.DcDate),
+            "customer" => isAsc ? query.OrderBy(d => d.Customer.Name) : query.OrderByDescending(d => d.Customer.Name),
+            "status" => isAsc ? query.OrderBy(d => d.Status) : query.OrderByDescending(d => d.Status),
+            _ => query.OrderByDescending(d => d.CreatedDate)
         };
 
         // ─── Pagination ───────────────────────────────────────
@@ -161,7 +176,7 @@ public class StockService
             .Take(filter.PageSize)
             .ToListAsync();
 
-        return new PaginatedResponse<LedgerResponse>
+        return new PaginatedResponse<JobWorkDCResponse>
         {
             Items = items.Select(MapToResponse).ToList(),
             Page = filter.Page,
@@ -177,18 +192,18 @@ public class StockService
             : DateTime.Now.AddMonths(-1));
         var toDate = query.ToDate ?? DateTime.Now;
 
-        var ledgers = await _context.JobWorkLedgers
-            .Include(l => l.Customer)
-            .Include(l => l.Product)
-            .Where(l => l.DcDate >= fromDate && l.DcDate <= toDate)
-            .OrderByDescending(l => l.DcDate)
+        var dcs = await _context.JobWorkDCs
+            .Include(d => d.Customer)
+            .Include(d => d.Items)
+                .ThenInclude(i => i.Product)
+            .Include(d => d.Items)
+                .ThenInclude(i => i.Transactions)
+            .Where(d => d.DcDate >= fromDate && d.DcDate <= toDate)
+            .OrderByDescending(d => d.DcDate)
             .ToListAsync();
 
         var stream = new MemoryStream();
 
-        // Workbook must be fully disposed before reading the stream.
-        // ClosedXML writes the ZIP end-of-central-directory record only on Dispose(),
-        // so calling ToArray() while the workbook is still alive produces a truncated file.
         using (var workbook = new XLWorkbook())
         {
             var worksheet = workbook.Worksheets.Add("Stock Report");
@@ -199,61 +214,86 @@ public class StockService
             worksheet.Cell(1, 3).Value = "Customer";
             worksheet.Cell(1, 4).Value = "Part No";
             worksheet.Cell(1, 5).Value = "Part Name";
-            worksheet.Cell(1, 6).Value = "Inward Qty";
-            worksheet.Cell(1, 7).Value = "Outward Qty";
-            worksheet.Cell(1, 8).Value = "Rejected Qty";
-            worksheet.Cell(1, 9).Value = "Status";
+            worksheet.Cell(1, 6).Value = "Qty Sent";
+            worksheet.Cell(1, 7).Value = "Inward Qty";
+            worksheet.Cell(1, 8).Value = "Outward Qty";
+            worksheet.Cell(1, 9).Value = "Rejected Qty";
+            worksheet.Cell(1, 10).Value = "Status";
 
             // Style header
-            var headerRange = worksheet.Range(1, 1, 1, 9);
+            var headerRange = worksheet.Range(1, 1, 1, 10);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
 
-            // Data rows
-            for (int i = 0; i < ledgers.Count; i++)
+            // Data rows (one row per item)
+            var row = 2;
+            foreach (var dc in dcs)
             {
-                var row = i + 2;
-                var l = ledgers[i];
-                worksheet.Cell(row, 1).Value = l.DcNo;
-                worksheet.Cell(row, 2).Value = l.DcDate.ToString("dd-MM-yyyy");
-                worksheet.Cell(row, 3).Value = l.Customer.Name;
-                worksheet.Cell(row, 4).Value = l.Product.PartNo;
-                worksheet.Cell(row, 5).Value = l.Product.PartName;
-                worksheet.Cell(row, 6).Value = l.InwardQty;
-                worksheet.Cell(row, 7).Value = l.OutwardQty;
-                worksheet.Cell(row, 8).Value = l.RejectedQty;
-                worksheet.Cell(row, 9).Value = l.Status.ToString();
+                foreach (var item in dc.Items)
+                {
+                    var inward = item.Transactions.Where(t => t.TransactionType == TransactionType.Inward).Sum(t => t.Quantity);
+                    var outward = item.Transactions.Where(t => t.TransactionType == TransactionType.Outward).Sum(t => t.Quantity);
+                    var rejected = item.Transactions.Where(t => t.TransactionType == TransactionType.Rejected).Sum(t => t.Quantity);
+
+                    worksheet.Cell(row, 1).Value = dc.DcNo;
+                    worksheet.Cell(row, 2).Value = dc.DcDate.ToString("dd-MM-yyyy");
+                    worksheet.Cell(row, 3).Value = dc.Customer.Name;
+                    worksheet.Cell(row, 4).Value = item.Product.PartNo;
+                    worksheet.Cell(row, 5).Value = item.Product.PartName;
+                    worksheet.Cell(row, 6).Value = item.QtySent;
+                    worksheet.Cell(row, 7).Value = inward;
+                    worksheet.Cell(row, 8).Value = outward;
+                    worksheet.Cell(row, 9).Value = rejected;
+                    worksheet.Cell(row, 10).Value = dc.Status.ToString();
+                    row++;
+                }
             }
 
             worksheet.Columns().AdjustToContents();
             workbook.SaveAs(stream);
-        } // Dispose flushes ZIP central directory into the stream
+        }
 
         var bytes = stream.ToArray();
 
-        // Upload to Supabase
         var fileName = $"StockReport_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         await _storageService.UploadFileAsync(
             "reports", fileName, bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
-        // Return clean proxy URL (no Supabase metadata exposed)
         return $"{baseUrl}/api/files/report/{Uri.EscapeDataString(fileName)}";
     }
 
-    private static LedgerResponse MapToResponse(JobWorkLedger ledger) => new()
+    private static JobWorkDCResponse MapToResponse(JobWorkDC dc) => new()
     {
-        Id = ledger.Id,
-        DcNo = ledger.DcNo,
-        DcDate = ledger.DcDate,
-        CustomerId = ledger.CustomerId,
-        CustomerName = ledger.Customer.Name,
-        ProductId = ledger.ProductId,
-        PartNo = ledger.Product.PartNo,
-        PartName = ledger.Product.PartName,
-        InwardQty = ledger.InwardQty,
-        OutwardQty = ledger.OutwardQty,
-        RejectedQty = ledger.RejectedQty,
-        Status = ledger.Status,
-        CreatedAt = ledger.CreatedAt
+        Id = dc.Id,
+        DcNo = dc.DcNo,
+        DcDate = dc.DcDate,
+        CustomerId = dc.CustomerId,
+        CustomerName = dc.Customer.Name,
+        Remarks = dc.Remarks,
+        Status = dc.Status,
+        CreatedAt = dc.CreatedDate,
+        Items = dc.Items.Select(i => new JobWorkDCItemResponse
+        {
+            Id = i.Id,
+            ProductId = i.ProductId,
+            PartNo = i.Product.PartNo,
+            PartName = i.Product.PartName,
+            QtySent = i.QtySent,
+            Rate = i.Rate,
+            GstPercent = i.GstPercent,
+            Remarks = i.Remarks,
+            InwardQty = i.Transactions.Where(t => t.TransactionType == TransactionType.Inward).Sum(t => t.Quantity),
+            OutwardQty = i.Transactions.Where(t => t.TransactionType == TransactionType.Outward).Sum(t => t.Quantity),
+            RejectedQty = i.Transactions.Where(t => t.TransactionType == TransactionType.Rejected).Sum(t => t.Quantity),
+            Transactions = i.Transactions.OrderByDescending(t => t.TransactionDate).Select(t => new JobWorkTransactionResponse
+            {
+                Id = t.Id,
+                TransactionDate = t.TransactionDate,
+                TransactionType = t.TransactionType,
+                Quantity = t.Quantity,
+                ReferenceNo = t.ReferenceNo,
+                Remarks = t.Remarks
+            }).ToList()
+        }).ToList()
     };
 }

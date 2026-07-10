@@ -4,7 +4,7 @@ public class InspectionReport
 {
     public Guid Id { get; set; }
     public Guid? InvoiceId { get; set; }
-    public Guid DcLedgerId { get; set; }
+    public Guid DcItemId { get; set; }
     public Guid CustomerId { get; set; }
     public Guid ProductId { get; set; }
     public string? DrawingNo { get; set; }
@@ -28,7 +28,7 @@ public class InspectionReport
 
     // Navigation properties
     public Invoice? Invoice { get; set; }
-    public JobWorkLedger DcLedger { get; set; } = null!;
+    public JobWorkDCItem DcItem { get; set; } = null!;
     public Customer Customer { get; set; } = null!;
     public Product Product { get; set; } = null!;
 }

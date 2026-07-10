@@ -28,7 +28,7 @@ public class InspectionReportService
         {
             Id = Guid.NewGuid(),
             InvoiceId = request.InvoiceId,
-            DcLedgerId = request.DcLedgerId,
+            DcItemId = request.DcLedgerId,
             CustomerId = request.CustomerId,
             ProductId = request.ProductId,
             DrawingNo = request.DrawingNo,
@@ -61,7 +61,7 @@ public class InspectionReportService
         var report = await _context.InspectionReports
             .Include(r => r.Customer)
             .Include(r => r.Product)
-            .Include(r => r.DcLedger)
+            .Include(r => r.DcItem)
             .FirstOrDefaultAsync(r => r.Id == id)
             ?? throw new KeyNotFoundException($"Inspection report with ID {id} not found.");
 
@@ -147,7 +147,7 @@ public class InspectionReportService
         var report = await _context.InspectionReports
             .Include(r => r.Customer)
             .Include(r => r.Product)
-            .Include(r => r.DcLedger)
+            .Include(r => r.DcItem)
             .FirstOrDefaultAsync(r => r.Id == id)
             ?? throw new KeyNotFoundException($"Inspection report with ID {id} not found.");
 
@@ -179,7 +179,7 @@ public class InspectionReportService
         {
             Id = report.Id,
             InvoiceId = report.InvoiceId,
-            DcLedgerId = report.DcLedgerId,
+            DcLedgerId = report.DcItemId,
             CustomerId = report.CustomerId,
             CustomerName = report.Customer.Name,
             ProductId = report.ProductId,

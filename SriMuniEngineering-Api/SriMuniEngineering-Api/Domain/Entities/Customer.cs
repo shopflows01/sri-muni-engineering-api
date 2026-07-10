@@ -17,7 +17,7 @@ public class Customer
     public DateTime? DeletedAt { get; set; }
 
     // Navigation properties
-    public ICollection<JobWorkLedger> JobWorkLedgers { get; set; } = [];
+    public ICollection<JobWorkDC> JobWorkDCs { get; set; } = [];
     public ICollection<Quotation> Quotations { get; set; } = [];
     public ICollection<Invoice> Invoices { get; set; } = [];
     public ICollection<InspectionReport> InspectionReports { get; set; } = [];

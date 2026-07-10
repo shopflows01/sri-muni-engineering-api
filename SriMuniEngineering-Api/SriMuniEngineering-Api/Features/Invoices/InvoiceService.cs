@@ -118,14 +118,23 @@ public class InvoiceService
         // ─── Update Stock Ledger (Outward Qty) ──────────────────────
         if (request.DcLedgerId.HasValue)
         {
-            var ledger = await _context.JobWorkLedgers.FirstOrDefaultAsync(l => l.Id == request.DcLedgerId.Value);
-            if (ledger != null)
+            var item = await _context.JobWorkDCItems.FirstOrDefaultAsync(i => i.Id == request.DcLedgerId.Value);
+            if (item != null)
             {
-                // Find invoice item matching this ledger's product
-                var matchingItem = invoiceItems.FirstOrDefault(i => i.ProductId == ledger.ProductId);
+                // Find invoice item matching this product
+                var matchingItem = invoiceItems.FirstOrDefault(i => i.ProductId == item.ProductId);
                 if (matchingItem != null)
                 {
-                    ledger.OutwardQty += (int)matchingItem.Quantity;
+                    _context.JobWorkTransactions.Add(new JobWorkTransaction
+                    {
+                        Id = Guid.NewGuid(),
+                        DcItemId = item.Id,
+                        TransactionDate = invoice.Date,
+                        TransactionType = TransactionType.Outward,
+                        Quantity = (int)matchingItem.Quantity,
+                        ReferenceNo = invoice.InvoiceNo,
+                        Remarks = "Auto-generated from Invoice"
+                    });
                 }
             }
         }
@@ -151,13 +160,16 @@ public class InvoiceService
         {
             foreach (var oldItem in invoice.Items)
             {
-                var ledgerToRevert = await _context.JobWorkLedgers
-                    .FirstOrDefaultAsync(l => l.DcNo == invoice.DeliveryNoteNo && l.ProductId == oldItem.ProductId);
+                var transactionsToRemove = await _context.JobWorkTransactions
+                    .Include(t => t.DcItem)
+                        .ThenInclude(i => i.JobWorkDC)
+                    .Where(t => t.DcItem.JobWorkDC.DcNo == invoice.DeliveryNoteNo 
+                             && t.DcItem.ProductId == oldItem.ProductId
+                             && t.ReferenceNo == invoice.InvoiceNo
+                             && t.TransactionType == TransactionType.Outward)
+                    .ToListAsync();
                     
-                if (ledgerToRevert != null)
-                {
-                    ledgerToRevert.OutwardQty -= (int)oldItem.Quantity;
-                }
+                _context.JobWorkTransactions.RemoveRange(transactionsToRemove);
             }
         }
 
@@ -223,12 +235,22 @@ public class InvoiceService
         {
             foreach (var newItem in invoiceItems)
             {
-                var ledgerToApply = await _context.JobWorkLedgers
-                    .FirstOrDefaultAsync(l => l.DcNo == request.DeliveryNoteNo && l.ProductId == newItem.ProductId);
+                var dcItem = await _context.JobWorkDCItems
+                    .Include(i => i.JobWorkDC)
+                    .FirstOrDefaultAsync(i => i.JobWorkDC.DcNo == request.DeliveryNoteNo && i.ProductId == newItem.ProductId);
                     
-                if (ledgerToApply != null)
+                if (dcItem != null)
                 {
-                    ledgerToApply.OutwardQty += (int)newItem.Quantity;
+                    _context.JobWorkTransactions.Add(new JobWorkTransaction
+                    {
+                        Id = Guid.NewGuid(),
+                        DcItemId = dcItem.Id,
+                        TransactionDate = invoice.Date,
+                        TransactionType = TransactionType.Outward,
+                        Quantity = (int)newItem.Quantity,
+                        ReferenceNo = invoice.InvoiceNo,
+                        Remarks = "Auto-generated from Invoice update"
+                    });
                 }
             }
         }

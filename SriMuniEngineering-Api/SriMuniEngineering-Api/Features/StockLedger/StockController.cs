@@ -16,37 +16,19 @@ public class StockController : ControllerBase
         _stockService = stockService;
     }
 
-    [HttpPost("inward")]
-    public async Task<IActionResult> CreateInward([FromBody] InwardRequest request)
+    [HttpPost("dc")]
+    public async Task<IActionResult> CreateDC([FromBody] CreateJobWorkDCRequest request)
     {
-        var result = await _stockService.CreateInwardAsync(request);
+        var result = await _stockService.CreateDCAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    [HttpPut("outward/{id:guid}")]
-    public async Task<IActionResult> UpdateOutward(Guid id, [FromBody] OutwardRequest request)
+    [HttpPost("dc-item/{dcItemId:guid}/transaction")]
+    public async Task<IActionResult> AddTransaction(Guid dcItemId, [FromBody] TransactionRequest request)
     {
         try
         {
-            var result = await _stockService.UpdateOutwardAsync(id, request);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
-    [HttpPut("rejected/{id:guid}")]
-    public async Task<IActionResult> UpdateRejected(Guid id, [FromBody] RejectedRequest request)
-    {
-        try
-        {
-            var result = await _stockService.UpdateRejectedAsync(id, request);
+            var result = await _stockService.AddTransactionAsync(dcItemId, request);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

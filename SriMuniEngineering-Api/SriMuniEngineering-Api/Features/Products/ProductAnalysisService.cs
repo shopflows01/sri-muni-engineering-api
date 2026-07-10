@@ -20,18 +20,22 @@ public class ProductAnalysisService
             .FirstOrDefaultAsync(p => p.Id == productId)
             ?? throw new KeyNotFoundException($"Product with ID {productId} not found.");
 
-        // ─── Production data (JobWorkLedger) ─────────────────
-        var ledgers = await _context.JobWorkLedgers
-            .Include(l => l.Customer)
-            .Where(l => l.ProductId == productId)
-            .OrderByDescending(l => l.DcDate)
+        // ─── Production data (JobWorkDCs) ─────────────────
+        var items = await _context.JobWorkDCItems
+            .Include(i => i.JobWorkDC)
+                .ThenInclude(d => d.Customer)
+            .Include(i => i.Transactions)
+            .Where(i => i.ProductId == productId)
             .ToListAsync();
 
-        var totalInward = ledgers.Sum(l => l.InwardQty);
-        var totalOutward = ledgers.Sum(l => l.OutwardQty);
-        var totalRejected = ledgers.Sum(l => l.RejectedQty);
-        var productionDays = ledgers.Select(l => l.DcDate.Date).Distinct().Count();
-        var lastProductionDate = ledgers.FirstOrDefault()?.DcDate;
+        var allTransactions = items.SelectMany(i => i.Transactions).ToList();
+        var totalInward = allTransactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Inward).Sum(t => t.Quantity);
+        var totalOutward = allTransactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Outward).Sum(t => t.Quantity);
+        var totalRejected = allTransactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Rejected).Sum(t => t.Quantity);
+        
+        var dcs = items.Select(i => i.JobWorkDC).DistinctBy(d => d.Id).ToList();
+        var productionDays = dcs.Select(d => d.DcDate.Date).Distinct().Count();
+        var lastProductionDate = dcs.OrderByDescending(d => d.DcDate).FirstOrDefault()?.DcDate;
 
         // ─── Sales data (InvoiceItems) ───────────────────────
         var invoiceItems = await _context.InvoiceItems
@@ -62,8 +66,8 @@ public class ProductAnalysisService
                 Unit = product.Unit,
                 SellingPrice = product.BasePricePerUnit,
                 HsnSac = product.HsnSac,
-                Customers = ledgers
-                    .Select(l => new ProductCustomerDto { CustomerId = l.Customer.Id, CustomerName = l.Customer.Name })
+                Customers = dcs
+                    .Select(d => new ProductCustomerDto { CustomerId = d.Customer.Id, CustomerName = d.Customer.Name })
                     .DistinctBy(c => c.CustomerId)
                     .ToList()
             },
@@ -96,18 +100,19 @@ public class ProductAnalysisService
             },
 
             // Recent production history (last 20)
-            RecentProductionHistory = ledgers
+            RecentProductionHistory = items
+                .OrderByDescending(i => i.JobWorkDC.DcDate)
                 .Take(20)
-                .Select(l => new ProductionHistoryItem
+                .Select(i => new ProductionHistoryItem
                 {
-                    LedgerId = l.Id,
-                    DcNo = l.DcNo,
-                    DcDate = l.DcDate,
-                    CustomerName = l.Customer.Name,
-                    InwardQty = l.InwardQty,
-                    OutwardQty = l.OutwardQty,
-                    RejectedQty = l.RejectedQty,
-                    Status = l.Status.ToString()
+                    LedgerId = i.Id,
+                    DcNo = i.JobWorkDC.DcNo,
+                    DcDate = i.JobWorkDC.DcDate,
+                    CustomerName = i.JobWorkDC.Customer.Name,
+                    InwardQty = i.Transactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Inward).Sum(t => t.Quantity),
+                    OutwardQty = i.Transactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Outward).Sum(t => t.Quantity),
+                    RejectedQty = i.Transactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Rejected).Sum(t => t.Quantity),
+                    Status = i.JobWorkDC.Status.ToString()
                 }).ToList(),
 
             // Recent invoice history for this product (last 20)
@@ -125,52 +130,26 @@ public class ProductAnalysisService
                 }).ToList(),
 
             // Recent stock movements (last 20 ledger entries as movements)
-            RecentStockMovements = BuildStockMovements(ledgers.Take(20).ToList())
+            RecentStockMovements = BuildStockMovements(items.Take(20).ToList())
         };
     }
 
-    private static List<StockMovementItem> BuildStockMovements(List<Domain.Entities.JobWorkLedger> ledgers)
+    private static List<StockMovementItem> BuildStockMovements(List<Domain.Entities.JobWorkDCItem> items)
     {
         var movements = new List<StockMovementItem>();
 
-        foreach (var l in ledgers)
+        foreach (var i in items)
         {
-            if (l.InwardQty > 0)
+            foreach (var t in i.Transactions)
             {
                 movements.Add(new StockMovementItem
                 {
-                    LedgerId = l.Id,
-                    DcNo = l.DcNo,
-                    DcDate = l.DcDate,
-                    CustomerName = l.Customer.Name,
-                    MovementType = "Inward",
-                    Quantity = l.InwardQty
-                });
-            }
-
-            if (l.OutwardQty > 0)
-            {
-                movements.Add(new StockMovementItem
-                {
-                    LedgerId = l.Id,
-                    DcNo = l.DcNo,
-                    DcDate = l.DcDate,
-                    CustomerName = l.Customer.Name,
-                    MovementType = "Outward",
-                    Quantity = l.OutwardQty
-                });
-            }
-
-            if (l.RejectedQty > 0)
-            {
-                movements.Add(new StockMovementItem
-                {
-                    LedgerId = l.Id,
-                    DcNo = l.DcNo,
-                    DcDate = l.DcDate,
-                    CustomerName = l.Customer.Name,
-                    MovementType = "Rejected",
-                    Quantity = l.RejectedQty
+                    LedgerId = i.Id,
+                    DcNo = i.JobWorkDC.DcNo,
+                    DcDate = i.JobWorkDC.DcDate,
+                    CustomerName = i.JobWorkDC.Customer.Name,
+                    MovementType = t.TransactionType.ToString(),
+                    Quantity = t.Quantity
                 });
             }
         }

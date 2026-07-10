@@ -15,7 +15,7 @@ public class Product
     public DateTime? DeletedAt { get; set; }
 
     // Navigation properties
-    public ICollection<JobWorkLedger> JobWorkLedgers { get; set; } = [];
+    public ICollection<JobWorkDCItem> JobWorkDCItems { get; set; } = [];
     public ICollection<Quotation> Quotations { get; set; } = [];
     public ICollection<InvoiceItem> InvoiceItems { get; set; } = [];
     public ICollection<InspectionReport> InspectionReports { get; set; } = [];

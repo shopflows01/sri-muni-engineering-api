@@ -61,8 +61,9 @@ public class ProductService
     public async Task<ProductResponse> GetByIdAsync(Guid id)
     {
         var product = await _context.Products
-            .Include(p => p.JobWorkLedgers)
-                .ThenInclude(l => l.Customer)
+            .Include(p => p.JobWorkDCItems)
+                .ThenInclude(i => i.JobWorkDC)
+                    .ThenInclude(d => d.Customer)
             .FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new KeyNotFoundException($"Product with ID {id} not found.");
 
@@ -72,8 +73,9 @@ public class ProductService
     public async Task<PaginatedResponse<ProductResponse>> GetAllAsync(PaginatedRequest filter)
     {
         var query = _context.Products
-            .Include(p => p.JobWorkLedgers)
-                .ThenInclude(l => l.Customer)
+            .Include(p => p.JobWorkDCItems)
+                .ThenInclude(i => i.JobWorkDC)
+                    .ThenInclude(d => d.Customer)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
@@ -129,8 +131,8 @@ public class ProductService
         Unit = p.Unit,
         IsDeleted = p.IsDeleted,
         DeletedAt = p.DeletedAt,
-        Customers = (p.JobWorkLedgers ?? [])
-            .Select(l => new ProductCustomerDto { CustomerId = l.CustomerId, CustomerName = l.Customer.Name })
+        Customers = (p.JobWorkDCItems ?? [])
+            .Select(i => new ProductCustomerDto { CustomerId = i.JobWorkDC.CustomerId, CustomerName = i.JobWorkDC.Customer.Name })
             .DistinctBy(c => c.CustomerId)
             .ToList()
     };
