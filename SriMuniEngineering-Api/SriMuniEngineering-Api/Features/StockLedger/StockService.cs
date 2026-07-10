@@ -262,6 +262,152 @@ public class StockService
         return $"{baseUrl}/api/files/report/{Uri.EscapeDataString(fileName)}";
     }
 
+    public async Task<JobWorkDCResponse> UpdateDCAsync(Guid id, UpdateJobWorkDCRequest request)
+    {
+        var dc = await _context.JobWorkDCs
+            .Include(d => d.Items)
+                .ThenInclude(i => i.Transactions)
+            .FirstOrDefaultAsync(d => d.Id == id)
+            ?? throw new KeyNotFoundException($"DC entry with ID {id} not found.");
+
+        dc.DcNo = request.DcNo;
+        dc.DcDate = request.DcDate;
+        dc.CustomerId = request.CustomerId;
+        dc.Remarks = request.Remarks;
+
+        // Keep track of requested item IDs to find deleted items
+        var requestedItemIds = request.Items.Where(i => i.Id.HasValue).Select(i => i.Id!.Value).ToList();
+        
+        // Remove deleted items
+        var itemsToRemove = dc.Items.Where(i => !requestedItemIds.Contains(i.Id)).ToList();
+        foreach (var itemToRemove in itemsToRemove)
+        {
+            _context.JobWorkDCItems.Remove(itemToRemove);
+        }
+
+        // Add or update items
+        foreach (var reqItem in request.Items)
+        {
+            if (reqItem.Id.HasValue && reqItem.Id.Value != Guid.Empty)
+            {
+                var existingItem = dc.Items.FirstOrDefault(i => i.Id == reqItem.Id.Value);
+                if (existingItem != null)
+                {
+                    existingItem.ProductId = reqItem.ProductId;
+                    existingItem.QtySent = reqItem.QtySent;
+                    existingItem.Rate = reqItem.Rate;
+                    existingItem.GstPercent = reqItem.GstPercent;
+                    existingItem.Remarks = reqItem.Remarks;
+                    
+                    // Update initial inward transaction if QtySent changed
+                    var initialInward = existingItem.Transactions.FirstOrDefault(t => t.TransactionType == TransactionType.Inward && t.Remarks == "Initial Inward");
+                    if (initialInward != null)
+                    {
+                        initialInward.Quantity = reqItem.QtySent;
+                    }
+                }
+            }
+            else
+            {
+                var newItem = new JobWorkDCItem
+                {
+                    Id = Guid.NewGuid(),
+                    DcId = dc.Id,
+                    ProductId = reqItem.ProductId,
+                    QtySent = reqItem.QtySent,
+                    Rate = reqItem.Rate,
+                    GstPercent = reqItem.GstPercent,
+                    Remarks = reqItem.Remarks
+                };
+
+                newItem.Transactions.Add(new JobWorkTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    DcItemId = newItem.Id,
+                    TransactionDate = request.DcDate,
+                    TransactionType = TransactionType.Inward,
+                    Quantity = reqItem.QtySent,
+                    Remarks = "Initial Inward"
+                });
+
+                dc.Items.Add(newItem);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return await GetByIdAsync(dc.Id);
+    }
+
+    public async Task<PaginatedResponse<TransactionHistoryResponse>> GetTransactionsAsync(TransactionFilterRequest filter)
+    {
+        var query = _context.JobWorkTransactions
+            .Include(t => t.DcItem)
+                .ThenInclude(i => i.JobWorkDC)
+                    .ThenInclude(d => d.Customer)
+            .Include(t => t.DcItem)
+                .ThenInclude(i => i.Product)
+            .AsQueryable();
+
+        if (filter.FromDate.HasValue)
+            query = query.Where(t => t.TransactionDate >= filter.FromDate.Value);
+
+        if (filter.ToDate.HasValue)
+            query = query.Where(t => t.TransactionDate <= filter.ToDate.Value);
+
+        if (filter.CustomerId.HasValue)
+            query = query.Where(t => t.DcItem.JobWorkDC.CustomerId == filter.CustomerId.Value);
+
+        if (filter.ProductId.HasValue)
+            query = query.Where(t => t.DcItem.ProductId == filter.ProductId.Value);
+
+        if (!string.IsNullOrWhiteSpace(filter.TransactionType) && Enum.TryParse<TransactionType>(filter.TransactionType, true, out var typeEnum))
+            query = query.Where(t => t.TransactionType == typeEnum);
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+            query = query.Where(t => 
+                t.DcItem.JobWorkDC.DcNo.Contains(filter.Search) ||
+                t.DcItem.Product.PartNo.Contains(filter.Search) ||
+                t.DcItem.JobWorkDC.Customer.Name.Contains(filter.Search));
+
+        var isAsc = filter.SortDirection.Equals("asc", StringComparison.OrdinalIgnoreCase);
+        query = filter.SortBy?.ToLower() switch
+        {
+            "date" => isAsc ? query.OrderBy(t => t.TransactionDate) : query.OrderByDescending(t => t.TransactionDate),
+            "dcno" => isAsc ? query.OrderBy(t => t.DcItem.JobWorkDC.DcNo) : query.OrderByDescending(t => t.DcItem.JobWorkDC.DcNo),
+            _ => query.OrderByDescending(t => t.TransactionDate)
+        };
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .Select(t => new TransactionHistoryResponse
+            {
+                TransactionId = t.Id,
+                DcItemId = t.DcItemId,
+                DcId = t.DcItem.DcId,
+                DcNo = t.DcItem.JobWorkDC.DcNo,
+                DcDate = t.DcItem.JobWorkDC.DcDate,
+                CustomerName = t.DcItem.JobWorkDC.Customer.Name,
+                PartNo = t.DcItem.Product.PartNo,
+                PartName = t.DcItem.Product.PartName,
+                TransactionDate = t.TransactionDate,
+                TransactionType = t.TransactionType.ToString(),
+                Quantity = t.Quantity,
+                ReferenceNo = t.ReferenceNo,
+                Remarks = t.Remarks
+            })
+            .ToListAsync();
+
+        return new PaginatedResponse<TransactionHistoryResponse>
+        {
+            Items = items,
+            Page = filter.Page,
+            PageSize = filter.PageSize,
+            TotalCount = totalCount
+        };
+    }
+
     private static JobWorkDCResponse MapToResponse(JobWorkDC dc) => new()
     {
         Id = dc.Id,

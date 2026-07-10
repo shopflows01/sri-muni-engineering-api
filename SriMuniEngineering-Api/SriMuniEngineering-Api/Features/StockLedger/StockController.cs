@@ -23,6 +23,20 @@ public class StockController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateDC(Guid id, [FromBody] UpdateJobWorkDCRequest request)
+    {
+        try
+        {
+            var result = await _stockService.UpdateDCAsync(id, request);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("dc-item/{dcItemId:guid}/transaction")]
     public async Task<IActionResult> AddTransaction(Guid dcItemId, [FromBody] TransactionRequest request)
     {
@@ -73,6 +87,13 @@ public class StockController : ControllerBase
     public async Task<IActionResult> GetAll([FromQuery] StockFilterRequest filter)
     {
         var result = await _stockService.GetAllAsync(filter);
+        return Ok(result);
+    }
+
+    [HttpGet("transactions")]
+    public async Task<IActionResult> GetTransactions([FromQuery] TransactionFilterRequest filter)
+    {
+        var result = await _stockService.GetTransactionsAsync(filter);
         return Ok(result);
     }
 
