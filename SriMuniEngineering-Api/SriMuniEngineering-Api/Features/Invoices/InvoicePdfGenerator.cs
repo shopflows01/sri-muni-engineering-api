@@ -220,7 +220,7 @@ public static class InvoicePdfGenerator
                 AddTaxRow("SGST", totalSgst);
                 AddTaxRow("IGST", totalIgst);
 
-                AddEmptyRow(120);
+                AddEmptyRow(50);
 
                 table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(11);
                 table.Cell().BorderTop(0.5f).Padding(3).AlignRight().Text($"₹ {invoice.GrandTotal:N2}").Bold().FontSize(11);
