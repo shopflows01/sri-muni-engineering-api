@@ -222,10 +222,10 @@ public class ProductAnalysisService
         
         var richText = ws.Cell("A1").GetRichText();
         richText.ClearText();
-        richText.AddText("From: ").SetFontName("Calibri").SetFontSize(12).SetFontColor(XLColor.Black).SetBold(false);
-        richText.AddText(customerName).SetFontName("Calibri").SetFontSize(16).SetFontColor(XLColor.Purple).SetBold(true);
-        richText.AddText(Environment.NewLine + "To: ").SetFontName("Calibri").SetFontSize(12).SetFontColor(XLColor.Black).SetBold(false);
-        richText.AddText("SRI VALLI INDUSTRIES").SetFontName("Calibri").SetFontSize(16).SetFontColor(XLColor.Purple).SetBold(true);
+        richText.AddText("From: ").SetFontName("Calibri").SetFontSize(11).SetFontColor(XLColor.Black).SetBold(false);
+        richText.AddText(customerName).SetFontName("Calibri").SetFontSize(14).SetFontColor(XLColor.Purple).SetBold(true);
+        richText.AddText(Environment.NewLine + "To: ").SetFontName("Calibri").SetFontSize(11).SetFontColor(XLColor.Black).SetBold(false);
+        richText.AddText("Sri Valli Industries").SetFontName("Calibri").SetFontSize(14).SetFontColor(XLColor.Purple).SetBold(true);
         
         ws.Cell("A1").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         ws.Cell("A1").Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
