@@ -154,7 +154,7 @@ public class ReceiptService : IReceiptService
                 throw new InvalidOperationException($"Allocation amount {alloc.Amount} exceeds outstanding balance {outstanding} for Invoice {invoice.InvoiceNo}.");
             }
 
-            creditEntry.Allocations.Add(new VoucherAllocation
+            var newAllocation = new VoucherAllocation
             {
                 Id = Guid.NewGuid(),
                 VoucherEntryId = creditEntry.Id,
@@ -162,7 +162,9 @@ public class ReceiptService : IReceiptService
                 AllocatedAmount = alloc.Amount,
                 AllocationDate = DateTime.Now,
                 Remarks = "Late Allocation"
-            });
+            };
+            
+            _context.VoucherAllocations.Add(newAllocation);
         }
 
         await _context.SaveChangesAsync();

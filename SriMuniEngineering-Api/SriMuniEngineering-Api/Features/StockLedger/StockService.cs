@@ -429,7 +429,7 @@ public class StockService
             Rate = i.Rate,
             GstPercent = i.GstPercent,
             Remarks = i.Remarks,
-            InwardQty = i.Transactions.Where(t => t.TransactionType == TransactionType.Inward).Sum(t => t.Quantity),
+            InwardQty = i.QtySent,
             OutwardQty = i.Transactions.Where(t => t.TransactionType == TransactionType.Outward).Sum(t => t.Quantity),
             RejectedQty = i.Transactions.Where(t => t.TransactionType == TransactionType.Rejected).Sum(t => t.Quantity),
             Transactions = i.Transactions.OrderByDescending(t => t.TransactionDate).Select(t => new JobWorkTransactionResponse
