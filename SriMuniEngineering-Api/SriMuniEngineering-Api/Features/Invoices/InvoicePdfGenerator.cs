@@ -37,10 +37,10 @@ public static class InvoicePdfGenerator
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4);
-                    page.MarginLeft(40);
-                    page.MarginRight(20);
-                    page.MarginTop(20);
-                    page.MarginBottom(20);
+                    page.MarginLeft(55);
+                    page.MarginRight(30);
+                    page.MarginTop(10);
+                    page.MarginBottom(10);
                     page.DefaultTextStyle(x => x.FontSize(9));
 
                     page.Header().Element(header => ComposeHeader(header, label));
@@ -162,29 +162,29 @@ public static class InvoicePdfGenerator
 
                 table.Header(header =>
                 {
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Sl\nNo").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Description of Goods").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("HSN/SAC").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Quantity").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Rate").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("per").Bold().FontSize(9);
-                    header.Cell().BorderBottom(0.5f).Padding(3).AlignCenter().Text("Amount").Bold().FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Sl\nNo").FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Description of Goods").FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("HSN/SAC").FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Quantity").FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("Rate").FontSize(9);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text("per").FontSize(9);
+                    header.Cell().BorderBottom(0.5f).Padding(3).AlignCenter().Text("Amount").FontSize(9);
                 });
 
                 int slNo = 1;
                 foreach (var item in invoice.Items)
                 {
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(slNo.ToString()).FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(slNo.ToString()).FontSize(10);
                     table.Cell().BorderRight(0.5f).Padding(3).Column(col =>
                     {
-                        col.Item().Text($"{item.Product.PartName} ({item.Product.PartNo})").Bold().FontSize(9);
+                        col.Item().Text($"{item.Product.PartName} - {item.Product.PartNo}").Bold().FontSize(10);
                         if (!string.IsNullOrEmpty(item.Description))
                             col.Item().Text(item.Description).FontSize(9);
                     });
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(item.HsnCode ?? item.Product.HsnSac).FontSize(9);
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text($"{item.Quantity:F0} {item.Product.Unit}").FontSize(9);
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignRight().Text(item.Rate.ToString("F2")).FontSize(9);
-                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(item.Product.Unit).FontSize(9);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(item.HsnCode ?? item.Product.HsnSac).FontSize(10);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text($"{item.Quantity:F0} {item.Product.Unit}").FontSize(10);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignRight().Text(item.Rate.ToString("F2")).FontSize(10);
+                    table.Cell().BorderRight(0.5f).Padding(3).AlignCenter().Text(item.Product.Unit).FontSize(10);
                     decimal taxableAmount = (item.Quantity * item.Rate) - item.Discount;
                     table.Cell().Padding(3).AlignRight().Text(taxableAmount.ToString("N2")).Bold().FontSize(10);
 
@@ -220,9 +220,16 @@ public static class InvoicePdfGenerator
                 AddTaxRow("SGST", totalSgst);
                 AddTaxRow("IGST", totalIgst);
 
-                AddEmptyRow(105);
+                AddEmptyRow(125);
 
-                table.Cell().ColumnSpan(6).BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").Bold().FontSize(11);
+                decimal totalQty = invoice.Items.Sum(i => i.Quantity);
+                string units = invoice.Items.Select(i=>i.Product.Unit).FirstOrDefault() ?? "";
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).Text("");
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignRight().Text("Total").FontSize(10);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).Text("");
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).AlignCenter().Text($"{totalQty:F0} {units}").FontSize(10);
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).Text("");
+                table.Cell().BorderTop(0.5f).BorderRight(0.5f).Padding(3).Text("");
                 table.Cell().BorderTop(0.5f).Padding(3).AlignRight().Text($"₹ {invoice.GrandTotal:N2}").Bold().FontSize(11);
             });
 
@@ -231,7 +238,7 @@ public static class InvoicePdfGenerator
                 row.RelativeItem().Column(col =>
                 {
                     col.Item().Text("Amount Chargeable (in words)").FontSize(9).Italic();
-                    col.Item().Text(invoice.AmountInWords ?? "").Bold().FontSize(11);
+                    col.Item().Text(invoice.AmountInWords ?? "").Bold().FontSize(10);
                 });
                 row.AutoItem().AlignRight().Text("E. & O.E").FontSize(10);
             });
@@ -263,30 +270,30 @@ public static class InvoicePdfGenerator
 
                 table.Header(header =>
                 {
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("HSN/SAC").Bold().FontSize(8);
-                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("Taxable\nValue").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("HSN/SAC").FontSize(8);
+                    header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("Taxable\nValue").FontSize(8);
                     header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Column(col => {
-                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("Central Tax").Bold().FontSize(8);
+                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("Central Tax").FontSize(8);
                         col.Item().Row(r => {
-                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").Bold().FontSize(7);
-                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").Bold().FontSize(7);
+                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").FontSize(7);
+                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").FontSize(7);
                         });
                     });
                     header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Column(col => {
-                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("State Tax").Bold().FontSize(8);
+                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("State Tax").FontSize(8);
                         col.Item().Row(r => {
-                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").Bold().FontSize(7);
-                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").Bold().FontSize(7);
+                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").FontSize(7);
+                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").FontSize(7);
                         });
                     });
                     header.Cell().BorderBottom(0.5f).BorderRight(0.5f).Column(col => {
-                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("Integrated Tax").Bold().FontSize(8);
+                        col.Item().BorderBottom(0.5f).PaddingVertical(2).AlignCenter().Text("Integrated Tax").FontSize(8);
                         col.Item().Row(r => {
-                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").Bold().FontSize(7);
-                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").Bold().FontSize(7);
+                            r.RelativeItem().BorderRight(0.5f).PaddingVertical(2).AlignCenter().Text("Rate").FontSize(7);
+                            r.RelativeItem().PaddingVertical(2).AlignCenter().Text("Amount").FontSize(7);
                         });
                     });
-                    header.Cell().BorderBottom(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("Total Tax\nAmount").Bold().FontSize(8);
+                    header.Cell().BorderBottom(0.5f).Padding(2).AlignMiddle().AlignCenter().Text("Total Tax\nAmount").FontSize(8);
                 });
 
                 bool isInterState = company["StateCode"] != invoice.Customer.StateCode.ToString();
