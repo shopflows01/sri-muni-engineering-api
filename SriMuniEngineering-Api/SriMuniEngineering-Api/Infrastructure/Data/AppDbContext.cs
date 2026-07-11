@@ -242,7 +242,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.OpeningBalanceType).HasConversion<int>();
 
             entity.HasOne(e => e.Customer)
-                .WithOne()
+                .WithOne(c => c.Ledger)
                 .HasForeignKey<CustomerLedger>(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
         });

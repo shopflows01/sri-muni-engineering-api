@@ -300,11 +300,27 @@ public class StockService
                     existingItem.Remarks = reqItem.Remarks;
                     
                     // Update initial inward transaction if QtySent changed
-                    var initialInward = existingItem.Transactions.FirstOrDefault(t => t.TransactionType == TransactionType.Inward && t.Remarks == "Initial Inward");
+                    var initialInward = existingItem.Transactions
+                        .Where(t => t.TransactionType == TransactionType.Inward)
+                        .OrderBy(t => t.TransactionDate)
+                        .FirstOrDefault();
+
                     if (initialInward != null)
                     {
                         initialInward.Quantity = reqItem.QtySent;
                         initialInward.TransactionDate = request.DcDate;
+                    }
+                    else
+                    {
+                        existingItem.Transactions.Add(new JobWorkTransaction
+                        {
+                            Id = Guid.NewGuid(),
+                            DcItemId = existingItem.Id,
+                            TransactionDate = request.DcDate,
+                            TransactionType = TransactionType.Inward,
+                            Quantity = reqItem.QtySent,
+                            Remarks = "Initial Inward"
+                        });
                     }
                 }
             }
