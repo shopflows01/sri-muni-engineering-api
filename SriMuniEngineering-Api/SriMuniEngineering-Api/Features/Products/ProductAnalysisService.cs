@@ -184,10 +184,14 @@ public class ProductAnalysisService
             ?? invoiceItems.FirstOrDefault()?.Invoice?.Customer?.Name 
             ?? "Unknown Customer";
 
+        // Determine date range
+        var today = DateTime.Today;
+        var startDate = fromDate ?? new DateTime(today.Year, today.Month, 1);
+        var endDate = toDate ?? new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+
         // Filter by date
         var filteredDcs = dcItems
-            .Where(i => !fromDate.HasValue || i.JobWorkDC.DcDate >= fromDate.Value)
-            .Where(i => !toDate.HasValue || i.JobWorkDC.DcDate <= toDate.Value)
+            .Where(i => i.JobWorkDC.DcDate.Date >= startDate.Date && i.JobWorkDC.DcDate.Date <= endDate.Date)
             .Select(i => new { 
                 Date = i.JobWorkDC.DcDate, 
                 No = i.JobWorkDC.DcNo, 
@@ -198,8 +202,7 @@ public class ProductAnalysisService
             .ToList();
 
         var filteredInvoices = invoiceItems
-            .Where(ii => !fromDate.HasValue || ii.Invoice.Date >= fromDate.Value)
-            .Where(ii => !toDate.HasValue || ii.Invoice.Date <= toDate.Value)
+            .Where(ii => ii.Invoice.Date.Date >= startDate.Date && ii.Invoice.Date.Date <= endDate.Date)
             .Select(ii => new { 
                 Date = ii.Invoice.Date, 
                 No = ii.Invoice.InvoiceNo, 
@@ -261,24 +264,59 @@ public class ProductAnalysisService
         headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-        int maxRows = Math.Max(filteredDcs.Count, filteredInvoices.Count);
         int currentRow = 7;
 
-        for (int i = 0; i < maxRows; i++)
+        for (var date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
         {
-            if (i < filteredDcs.Count)
+            var dcsForDate = filteredDcs.Where(d => d.Date.Date == date).ToList();
+            var invoicesForDate = filteredInvoices.Where(i => i.Date.Date == date).ToList();
+            
+            int maxForDate = Math.Max(dcsForDate.Count, invoicesForDate.Count);
+            
+            if (maxForDate == 0)
             {
-                ws.Cell(currentRow, 1).Value = filteredDcs[i].Date.ToString("dd-MMM-yyyy");
-                ws.Cell(currentRow, 2).Value = filteredDcs[i].No;
-                ws.Cell(currentRow, 3).Value = filteredDcs[i].Qty;
+                ws.Cell(currentRow, 1).Value = date.ToString("dd-MMM-yyyy");
+                ws.Cell(currentRow, 2).Value = "-";
+                ws.Cell(currentRow, 3).Value = 0;
+                
+                ws.Cell(currentRow, 4).Value = date.ToString("dd-MMM-yyyy");
+                ws.Cell(currentRow, 5).Value = "-";
+                ws.Cell(currentRow, 6).Value = 0;
+                
+                currentRow++;
             }
-            if (i < filteredInvoices.Count)
+            else
             {
-                ws.Cell(currentRow, 4).Value = filteredInvoices[i].Date.ToString("dd-MMM-yyyy");
-                ws.Cell(currentRow, 5).Value = filteredInvoices[i].No;
-                ws.Cell(currentRow, 6).Value = filteredInvoices[i].Qty;
+                for (int i = 0; i < maxForDate; i++)
+                {
+                    if (i < dcsForDate.Count)
+                    {
+                        ws.Cell(currentRow, 1).Value = dcsForDate[i].Date.ToString("dd-MMM-yyyy");
+                        ws.Cell(currentRow, 2).Value = dcsForDate[i].No;
+                        ws.Cell(currentRow, 3).Value = dcsForDate[i].Qty;
+                    }
+                    else
+                    {
+                        ws.Cell(currentRow, 1).Value = date.ToString("dd-MMM-yyyy");
+                        ws.Cell(currentRow, 2).Value = "-";
+                        ws.Cell(currentRow, 3).Value = 0;
+                    }
+
+                    if (i < invoicesForDate.Count)
+                    {
+                        ws.Cell(currentRow, 4).Value = invoicesForDate[i].Date.ToString("dd-MMM-yyyy");
+                        ws.Cell(currentRow, 5).Value = invoicesForDate[i].No;
+                        ws.Cell(currentRow, 6).Value = invoicesForDate[i].Qty;
+                    }
+                    else
+                    {
+                        ws.Cell(currentRow, 4).Value = date.ToString("dd-MMM-yyyy");
+                        ws.Cell(currentRow, 5).Value = "-";
+                        ws.Cell(currentRow, 6).Value = 0;
+                    }
+                    currentRow++;
+                }
             }
-            currentRow++;
         }
 
         // Totals
