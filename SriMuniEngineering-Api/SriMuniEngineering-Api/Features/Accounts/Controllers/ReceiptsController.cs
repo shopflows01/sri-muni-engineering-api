@@ -109,4 +109,12 @@ public class ReceiptsController : ControllerBase
         var result = await _receiptService.GetAllocationsAsync(search, pagination);
         return Ok(result);
     }
+
+    [HttpGet("allocations/{allocationId}")]
+    public async Task<IActionResult> GetAllocation(Guid allocationId)
+    {
+        var result = await _receiptService.GetAllocationByIdAsync(allocationId);
+        if (result == null) return NotFound(new { message = "Allocation not found." });
+        return Ok(result);
+    }
 }

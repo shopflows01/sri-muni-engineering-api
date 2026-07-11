@@ -4,6 +4,7 @@ using SriMuniEngineering_Api.Features.Accounts.Dtos;
 using SriMuniEngineering_Api.Infrastructure.Data;
 
 using SriMuniEngineering_Api.Common.Dtos;
+using SriMuniEngineering_Api.Domain.Enums;
 
 namespace SriMuniEngineering_Api.Features.Accounts.Services;
 
@@ -16,6 +17,7 @@ public interface IReceiptService
     Task DeleteAllocationAsync(Guid allocationId);
     Task UpdateAllocationAsync(Guid allocationId, UpdateAllocationRequest request);
     Task<PagedResponse<AllocationResponseDto>> GetAllocationsAsync(string? search, PaginationRequest pagination);
+    Task<AllocationResponseDto?> GetAllocationByIdAsync(Guid allocationId);
 }
 
 public class ReceiptService : IReceiptService
@@ -165,6 +167,12 @@ public class ReceiptService : IReceiptService
             };
             
             _context.VoucherAllocations.Add(newAllocation);
+            
+            if (alloc.Amount == outstanding) {
+                invoice.Status = InvoiceStatus.Paid;
+            } else if (alloc.Amount > 0 && alloc.Amount < outstanding) {
+                invoice.Status = InvoiceStatus.PartiallyPaid;
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -176,6 +184,22 @@ public class ReceiptService : IReceiptService
         if (allocation == null) throw new KeyNotFoundException("Allocation not found.");
 
         _context.VoucherAllocations.Remove(allocation);
+        
+        var invoice = await _context.Invoices.FindAsync(allocation.InvoiceId);
+        if (invoice != null) {
+            var invoiceAllocated = await _context.VoucherAllocations
+                .Where(a => a.InvoiceId == allocation.InvoiceId && a.Id != allocationId)
+                .SumAsync(a => a.AllocatedAmount);
+            
+            if (invoiceAllocated == 0) {
+                invoice.Status = InvoiceStatus.Unpaid;
+            } else if (invoiceAllocated >= invoice.GrandTotal) {
+                invoice.Status = InvoiceStatus.Paid;
+            } else {
+                invoice.Status = InvoiceStatus.PartiallyPaid;
+            }
+        }
+
         await _context.SaveChangesAsync();
     }
     public async Task UpdateAllocationAsync(Guid allocationId, UpdateAllocationRequest request)
@@ -215,6 +239,14 @@ public class ReceiptService : IReceiptService
         if (request.Remarks != null)
         {
             allocation.Remarks = request.Remarks;
+        }
+
+        if (invoiceAllocated + request.Amount == invoice.GrandTotal) {
+            invoice.Status = InvoiceStatus.Paid;
+        } else if (invoiceAllocated + request.Amount > 0) {
+            invoice.Status = InvoiceStatus.PartiallyPaid;
+        } else {
+            invoice.Status = InvoiceStatus.Unpaid;
         }
 
         await _context.SaveChangesAsync();
@@ -261,5 +293,29 @@ public class ReceiptService : IReceiptService
         var pagedData = sortedResult.Skip((pagination.PageNumber - 1) * pagination.PageSize).Take(pagination.PageSize).ToList();
 
         return new PagedResponse<AllocationResponseDto>(pagedData, count, pagination.PageNumber, pagination.PageSize);
+    }
+
+    public async Task<AllocationResponseDto?> GetAllocationByIdAsync(Guid allocationId)
+    {
+        return await _context.VoucherAllocations
+            .Include(a => a.VoucherEntry)
+                .ThenInclude(e => e.Voucher)
+            .Include(a => a.VoucherEntry)
+                .ThenInclude(e => e.CustomerLedger)
+                    .ThenInclude(l => l!.Customer)
+            .Include(a => a.Invoice)
+            .Where(a => a.Id == allocationId)
+            .Select(a => new AllocationResponseDto
+            {
+                Id = a.Id,
+                ReceiptVoucherId = a.VoucherEntry.VoucherId,
+                ReceiptVoucherNumber = a.VoucherEntry.Voucher.VoucherNumber,
+                InvoiceId = a.InvoiceId,
+                InvoiceNumber = a.Invoice.InvoiceNo,
+                CustomerName = a.VoucherEntry.CustomerLedger != null ? a.VoucherEntry.CustomerLedger.Customer.Name : string.Empty,
+                AllocatedAmount = a.AllocatedAmount,
+                AllocationDate = a.AllocationDate
+            })
+            .FirstOrDefaultAsync();
     }
 }

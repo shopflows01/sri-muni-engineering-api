@@ -10,5 +10,7 @@ public class CustomerLedgerDto
     public decimal OpeningBalance { get; set; }
     public string OpeningBalanceType { get; set; } = string.Empty;
     public decimal CurrentBalance { get; set; }
+    public decimal OutstandingAmount { get; set; }
+    public decimal AdvanceAmount { get; set; }
     public PagedResponse<LedgerEntryDto> Entries { get; set; } = new PagedResponse<LedgerEntryDto>();
 }

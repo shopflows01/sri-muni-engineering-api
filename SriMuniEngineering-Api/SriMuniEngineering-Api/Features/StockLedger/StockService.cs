@@ -419,28 +419,32 @@ public class StockService
         Remarks = dc.Remarks,
         Status = dc.Status,
         CreatedAt = dc.CreatedDate,
-        Items = dc.Items.Select(i => new JobWorkDCItemResponse
-        {
-            Id = i.Id,
-            ProductId = i.ProductId,
-            PartNo = i.Product.PartNo,
-            PartName = i.Product.PartName,
-            QtySent = i.QtySent,
-            Rate = i.Rate,
-            GstPercent = i.GstPercent,
-            Remarks = i.Remarks,
-            InwardQty = i.QtySent,
-            OutwardQty = i.Transactions.Where(t => t.TransactionType == TransactionType.Outward).Sum(t => t.Quantity),
-            RejectedQty = i.Transactions.Where(t => t.TransactionType == TransactionType.Rejected).Sum(t => t.Quantity),
-            Transactions = i.Transactions.OrderByDescending(t => t.TransactionDate).Select(t => new JobWorkTransactionResponse
+        Items = dc.Items.Select(i => {
+            var outward = i.Transactions.Where(t => t.TransactionType == TransactionType.Outward).Sum(t => t.Quantity);
+            var rejected = i.Transactions.Where(t => t.TransactionType == TransactionType.Rejected).Sum(t => t.Quantity);
+            return new JobWorkDCItemResponse
             {
-                Id = t.Id,
-                TransactionDate = t.TransactionDate,
-                TransactionType = t.TransactionType,
-                Quantity = t.Quantity,
-                ReferenceNo = t.ReferenceNo,
-                Remarks = t.Remarks
-            }).ToList()
+                Id = i.Id,
+                ProductId = i.ProductId,
+                PartNo = i.Product.PartNo,
+                PartName = i.Product.PartName,
+                QtySent = i.QtySent,
+                Rate = i.Rate,
+                GstPercent = i.GstPercent,
+                Remarks = i.Remarks,
+                InwardQty = i.QtySent - outward - rejected,
+                OutwardQty = outward,
+                RejectedQty = rejected,
+                Transactions = i.Transactions.OrderByDescending(t => t.TransactionDate).Select(t => new JobWorkTransactionResponse
+                {
+                    Id = t.Id,
+                    TransactionDate = t.TransactionDate,
+                    TransactionType = t.TransactionType,
+                    Quantity = t.Quantity,
+                    ReferenceNo = t.ReferenceNo,
+                    Remarks = t.Remarks
+                }).ToList()
+            };
         }).ToList()
     };
 }

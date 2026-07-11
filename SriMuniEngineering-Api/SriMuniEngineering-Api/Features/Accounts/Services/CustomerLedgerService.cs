@@ -26,6 +26,9 @@ public class CustomerLedgerService : ICustomerLedgerService
 
     public async Task<CustomerLedgerDto> GetLedgerAsync(Guid customerId, PaginationRequest pagination)
     {
+        var outstanding = await GetOutstandingAsync(customerId);
+        var advance = await GetAdvanceBalanceAsync(customerId);
+
         var ledger = await _context.CustomerLedgers
             .Include(l => l.Customer)
             .Include(l => l.VoucherEntries)
@@ -45,6 +48,8 @@ public class CustomerLedgerService : ICustomerLedgerService
                 OpeningBalance = 0,
                 OpeningBalanceType = BalanceType.Debit.ToString(),
                 CurrentBalance = 0,
+                OutstandingAmount = outstanding,
+                AdvanceAmount = advance,
                 Entries = new PagedResponse<LedgerEntryDto>()
             };
         }
@@ -92,6 +97,8 @@ public class CustomerLedgerService : ICustomerLedgerService
             OpeningBalance = ledger.OpeningBalance,
             OpeningBalanceType = ledger.OpeningBalanceType.ToString(),
             CurrentBalance = finalBalance,
+            OutstandingAmount = outstanding,
+            AdvanceAmount = advance,
             Entries = pagedEntries
         };
     }
