@@ -21,4 +21,5 @@ public class Customer
     public ICollection<Quotation> Quotations { get; set; } = [];
     public ICollection<Invoice> Invoices { get; set; } = [];
     public ICollection<InspectionReport> InspectionReports { get; set; } = [];
+    public CustomerLedger? Ledger { get; set; }
 }

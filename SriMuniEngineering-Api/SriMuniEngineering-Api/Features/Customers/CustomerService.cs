@@ -64,7 +64,9 @@ public class CustomerService
 
     public async Task<CustomerResponse> GetByIdAsync(Guid id)
     {
-        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id)
+        var customer = await _context.Customers
+            .Include(c => c.Ledger)
+            .FirstOrDefaultAsync(c => c.Id == id)
             ?? throw new KeyNotFoundException($"Customer with ID {id} not found.");
 
         return MapToResponse(customer);
@@ -72,7 +74,7 @@ public class CustomerService
 
     public async Task<PaginatedResponse<CustomerResponse>> GetAllAsync(PaginatedRequest filter)
     {
-        var query = _context.Customers.AsQueryable();
+        var query = _context.Customers.Include(c => c.Ledger).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
             query = query.Where(c =>
@@ -128,6 +130,7 @@ public class CustomerService
         Phone = c.Phone,
         Email = c.Email,
         VendorCode = c.VendorCode,
+        LedgerNo = c.Ledger?.LedgerNo,
         IsDeleted = c.IsDeleted,
         DeletedAt = c.DeletedAt
     };

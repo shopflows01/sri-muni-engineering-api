@@ -54,6 +54,7 @@ public class CustomerResponse
     public string Phone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string? VendorCode { get; set; }
+    public string? LedgerNo { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
 }
