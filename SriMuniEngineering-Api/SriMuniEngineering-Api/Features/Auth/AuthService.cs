@@ -111,4 +111,19 @@ public class AuthService
     {
         _blacklistService.BlacklistToken(jti, tokenExpiry);
     }
+
+    public async Task<object> GetProfileAsync(Guid userId)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
+            throw new KeyNotFoundException("User not found.");
+
+        return new
+        {
+            userId = user.Id,
+            username = user.Username,
+            email = user.Email,
+            role = user.Role
+        };
+    }
 }

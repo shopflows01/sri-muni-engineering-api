@@ -118,23 +118,28 @@ public class InvoiceService
         // ─── Update Stock Ledger (Outward Qty) ──────────────────────
         if (request.DcLedgerId.HasValue)
         {
-            var item = await _context.JobWorkDCItems.FirstOrDefaultAsync(i => i.Id == request.DcLedgerId.Value);
-            if (item != null)
+            var dc = await _context.JobWorkDCs
+                .Include(d => d.Items)
+                .FirstOrDefaultAsync(d => d.Id == request.DcLedgerId.Value);
+
+            if (dc != null)
             {
-                // Find invoice item matching this product
-                var matchingItem = invoiceItems.FirstOrDefault(i => i.ProductId == item.ProductId);
-                if (matchingItem != null)
+                foreach (var invoiceItem in invoiceItems)
                 {
-                    _context.JobWorkTransactions.Add(new JobWorkTransaction
+                    var dcItem = dc.Items.FirstOrDefault(i => i.ProductId == invoiceItem.ProductId);
+                    if (dcItem != null)
                     {
-                        Id = Guid.NewGuid(),
-                        DcItemId = item.Id,
-                        TransactionDate = invoice.Date,
-                        TransactionType = TransactionType.Outward,
-                        Quantity = (int)matchingItem.Quantity,
-                        ReferenceNo = invoice.InvoiceNo,
-                        Remarks = "Auto-generated from Invoice"
-                    });
+                        _context.JobWorkTransactions.Add(new JobWorkTransaction
+                        {
+                            Id = Guid.NewGuid(),
+                            DcItemId = dcItem.Id,
+                            TransactionDate = invoice.Date,
+                            TransactionType = TransactionType.Outward,
+                            Quantity = (int)invoiceItem.Quantity,
+                            ReferenceNo = invoice.InvoiceNo,
+                            Remarks = "Auto-generated from Invoice"
+                        });
+                    }
                 }
             }
         }
@@ -231,7 +236,34 @@ public class InvoiceService
         _context.InvoiceItems.AddRange(invoiceItems);
 
         // Apply new outward quantities
-        if (!string.IsNullOrEmpty(request.DeliveryNoteNo))
+        if (request.DcLedgerId.HasValue)
+        {
+            var dc = await _context.JobWorkDCs
+                .Include(d => d.Items)
+                .FirstOrDefaultAsync(d => d.Id == request.DcLedgerId.Value);
+
+            if (dc != null)
+            {
+                foreach (var newItem in invoiceItems)
+                {
+                    var dcItem = dc.Items.FirstOrDefault(i => i.ProductId == newItem.ProductId);
+                    if (dcItem != null)
+                    {
+                        _context.JobWorkTransactions.Add(new JobWorkTransaction
+                        {
+                            Id = Guid.NewGuid(),
+                            DcItemId = dcItem.Id,
+                            TransactionDate = invoice.Date,
+                            TransactionType = TransactionType.Outward,
+                            Quantity = (int)newItem.Quantity,
+                            ReferenceNo = invoice.InvoiceNo,
+                            Remarks = "Auto-generated from Invoice update"
+                        });
+                    }
+                }
+            }
+        }
+        else if (!string.IsNullOrEmpty(request.DeliveryNoteNo))
         {
             foreach (var newItem in invoiceItems)
             {

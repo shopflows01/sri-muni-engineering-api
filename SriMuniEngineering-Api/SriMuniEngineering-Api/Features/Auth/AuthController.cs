@@ -79,4 +79,26 @@ public class AuthController : ControllerBase
         _authService.Logout(jti, expiry);
         return Ok(new { message = "Logged out successfully." });
     }
+
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<IActionResult> GetProfile()
+    {
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                     ?? User.FindFirst("UserId")?.Value 
+                     ?? User.FindFirst("Id")?.Value;
+                     
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized(new { message = "Invalid token claims." });
+
+        try
+        {
+            var profile = await _authService.GetProfileAsync(userId);
+            return Ok(profile);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "User profile not found." });
+        }
+    }
 }
