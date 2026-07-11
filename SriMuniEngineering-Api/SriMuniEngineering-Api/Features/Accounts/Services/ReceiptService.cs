@@ -123,12 +123,17 @@ public class ReceiptService : IReceiptService
         var creditEntry = voucher.Entries.FirstOrDefault(e => e.CreditAmount > 0 && e.CustomerLedgerId != null);
         if (creditEntry == null) throw new InvalidOperationException("Invalid receipt voucher: No customer credit entry found.");
 
-        decimal alreadyAllocated = creditEntry.Allocations.Sum(a => a.AllocatedAmount);
-        decimal newAllocationsTotal = request.Allocations.Sum(a => a.Amount);
+        decimal alreadyAllocated = creditEntry.Allocations?.Sum(a => a.AllocatedAmount) ?? 0;
+        decimal newAllocationsTotal = request.Allocations?.Sum(a => a.Amount) ?? 0;
 
         if (alreadyAllocated + newAllocationsTotal > creditEntry.CreditAmount)
         {
             throw new InvalidOperationException("Total allocated amount cannot exceed receipt amount.");
+        }
+
+        if (request.Allocations == null || !request.Allocations.Any())
+        {
+            return;
         }
 
         foreach (var alloc in request.Allocations)

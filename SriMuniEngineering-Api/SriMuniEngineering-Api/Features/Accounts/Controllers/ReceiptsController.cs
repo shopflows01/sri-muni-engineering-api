@@ -61,6 +61,14 @@ public class ReceiptsController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An internal server error occurred.", details = ex.Message });
+        }
     }
 
     [HttpDelete("allocations/{allocationId}")]

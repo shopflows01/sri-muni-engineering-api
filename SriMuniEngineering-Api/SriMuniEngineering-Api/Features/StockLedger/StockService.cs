@@ -304,6 +304,7 @@ public class StockService
                     if (initialInward != null)
                     {
                         initialInward.Quantity = reqItem.QtySent;
+                        initialInward.TransactionDate = request.DcDate;
                     }
                 }
             }

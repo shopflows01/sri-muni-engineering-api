@@ -219,8 +219,8 @@ public class ProductAnalysisService
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Ledger");
 
-        // Row 1-4 Merge A-F
-        var titleRange = ws.Range("A1:F4");
+        // Row 1-4 Merge A-G
+        var titleRange = ws.Range("A1:G4");
         titleRange.Merge();
         
         var richText = ws.Cell("A1").GetRichText();
@@ -243,8 +243,8 @@ public class ProductAnalysisService
             picture.Scale(0.8); // Adjust scale
         }
 
-        // Row 5 Merge A-F
-        var productRange = ws.Range("A5:F5");
+        // Row 5 Merge A-G
+        var productRange = ws.Range("A5:G5");
         productRange.Merge();
         productRange.Value = $"{product.PartName} - {product.PartNo}";
         productRange.Style.Font.Bold = true;
@@ -255,11 +255,12 @@ public class ProductAnalysisService
         ws.Cell("A6").Value = "DC Date";
         ws.Cell("B6").Value = "DC No";
         ws.Cell("C6").Value = "Qty";
-        ws.Cell("D6").Value = "Invoice Date";
-        ws.Cell("E6").Value = "Invoice No";
-        ws.Cell("F6").Value = "Qty";
+        ws.Cell("D6").Value = ""; // Gap column
+        ws.Cell("E6").Value = "Invoice Date";
+        ws.Cell("F6").Value = "Invoice No";
+        ws.Cell("G6").Value = "Qty";
         
-        var headerRange = ws.Range("A6:F6");
+        var headerRange = ws.Range("A6:G6");
         headerRange.Style.Font.Bold = true;
         headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -279,9 +280,11 @@ public class ProductAnalysisService
                 ws.Cell(currentRow, 2).Value = "-";
                 ws.Cell(currentRow, 3).Value = 0;
                 
-                ws.Cell(currentRow, 4).Value = date.ToString("dd-MMM-yyyy");
-                ws.Cell(currentRow, 5).Value = "-";
-                ws.Cell(currentRow, 6).Value = 0;
+                ws.Cell(currentRow, 4).Value = ""; // Gap column
+                
+                ws.Cell(currentRow, 5).Value = date.ToString("dd-MMM-yyyy");
+                ws.Cell(currentRow, 6).Value = "-";
+                ws.Cell(currentRow, 7).Value = 0;
                 
                 currentRow++;
             }
@@ -302,17 +305,19 @@ public class ProductAnalysisService
                         ws.Cell(currentRow, 3).Value = 0;
                     }
 
+                    ws.Cell(currentRow, 4).Value = ""; // Gap column
+
                     if (i < invoicesForDate.Count)
                     {
-                        ws.Cell(currentRow, 4).Value = invoicesForDate[i].Date.ToString("dd-MMM-yyyy");
-                        ws.Cell(currentRow, 5).Value = invoicesForDate[i].No;
-                        ws.Cell(currentRow, 6).Value = invoicesForDate[i].Qty;
+                        ws.Cell(currentRow, 5).Value = invoicesForDate[i].Date.ToString("dd-MMM-yyyy");
+                        ws.Cell(currentRow, 6).Value = invoicesForDate[i].No;
+                        ws.Cell(currentRow, 7).Value = invoicesForDate[i].Qty;
                     }
                     else
                     {
-                        ws.Cell(currentRow, 4).Value = date.ToString("dd-MMM-yyyy");
-                        ws.Cell(currentRow, 5).Value = "-";
-                        ws.Cell(currentRow, 6).Value = 0;
+                        ws.Cell(currentRow, 5).Value = date.ToString("dd-MMM-yyyy");
+                        ws.Cell(currentRow, 6).Value = "-";
+                        ws.Cell(currentRow, 7).Value = 0;
                     }
                     currentRow++;
                 }
@@ -329,28 +334,33 @@ public class ProductAnalysisService
         ws.Cell(currentRow, 5).Value = "Total:";
         ws.Cell(currentRow, 5).Style.Font.Bold = true;
         ws.Cell(currentRow, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-        ws.Cell(currentRow, 6).Value = totalOutward;
+        ws.Cell(currentRow, 6).Value = "Total:";
         ws.Cell(currentRow, 6).Style.Font.Bold = true;
+        ws.Cell(currentRow, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+        ws.Cell(currentRow, 7).Value = totalOutward;
+        ws.Cell(currentRow, 7).Style.Font.Bold = true;
         
         currentRow++;
 
         // Balance Stock
-        var balanceRange = ws.Range($"A{currentRow}:E{currentRow}");
+        var balanceRange = ws.Range($"A{currentRow}:F{currentRow}");
         balanceRange.Merge();
         balanceRange.Value = "Balance Stock:";
         balanceRange.Style.Font.Bold = true;
         balanceRange.Style.Font.FontColor = XLColor.Red;
         balanceRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-        ws.Cell(currentRow, 6).Value = balance;
-        ws.Cell(currentRow, 6).Style.Font.Bold = true;
-        ws.Cell(currentRow, 6).Style.Font.FontColor = XLColor.Red;
+        ws.Cell(currentRow, 7).Value = balance;
+        ws.Cell(currentRow, 7).Style.Font.Bold = true;
+        ws.Cell(currentRow, 7).Style.Font.FontColor = XLColor.Red;
 
         // Apply Borders
-        var dataRange = ws.Range($"A1:F{currentRow}");
+        var dataRange = ws.Range($"A1:G{currentRow}");
         dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
 
-        ws.Columns(1, 6).AdjustToContents();
+        ws.Columns(1, 3).AdjustToContents();
+        ws.Column(4).Width = 8; // Adjust gap width for visual spaciousness
+        ws.Columns(5, 7).AdjustToContents();
 
         // Print settings
         ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
