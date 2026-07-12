@@ -87,7 +87,7 @@ public class StockService
                 Remarks = request.Remarks
             };
 
-            item.Transactions.Add(newTransaction);
+            _context.JobWorkTransactions.Add(newTransaction);
             
             // Update DC Status if all items are fully processed (inward == outward + rejected)
             await _context.SaveChangesAsync();
@@ -96,7 +96,13 @@ public class StockService
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"DB Error: {ex.Message} | Inner: {ex.InnerException?.Message}");
+            var states = _context.ChangeTracker.Entries()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
+                .Select(e => $"{e.Entity.GetType().Name} - {e.State}")
+                .ToList();
+            var stateStr = string.Join(", ", states);
+            
+            throw new InvalidOperationException($"DB Error: {ex.Message} | Tracked Entities: {stateStr} | Inner: {ex.InnerException?.Message}");
         }
     }
 
