@@ -74,23 +74,30 @@ public class StockService
             .FirstOrDefaultAsync(i => i.Id == dcItemId)
             ?? throw new KeyNotFoundException($"DC Item with ID {dcItemId} not found.");
 
-        var newTransaction = new JobWorkTransaction
+        try
         {
-            Id = Guid.NewGuid(),
-            DcItemId = dcItemId,
-            TransactionDate = request.TransactionDate == default ? DateTime.Now : request.TransactionDate,
-            TransactionType = request.TransactionType,
-            Quantity = request.Quantity,
-            ReferenceNo = request.ReferenceNo,
-            Remarks = request.Remarks
-        };
+            var newTransaction = new JobWorkTransaction
+            {
+                Id = Guid.NewGuid(),
+                DcItemId = dcItemId,
+                TransactionDate = request.TransactionDate == default ? DateTime.Now : request.TransactionDate,
+                TransactionType = request.TransactionType,
+                Quantity = request.Quantity,
+                ReferenceNo = request.ReferenceNo,
+                Remarks = request.Remarks
+            };
 
-        item.Transactions.Add(newTransaction);
-        
-        // Update DC Status if all items are fully processed (inward == outward + rejected)
-        await _context.SaveChangesAsync();
-        
-        return await GetByIdAsync(item.DcId);
+            item.Transactions.Add(newTransaction);
+            
+            // Update DC Status if all items are fully processed (inward == outward + rejected)
+            await _context.SaveChangesAsync();
+            
+            return await GetByIdAsync(item.DcId);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"DB Error: {ex.Message} | Inner: {ex.InnerException?.Message}");
+        }
     }
 
     public async Task<JobWorkDCResponse> GetByIdAsync(Guid id)
