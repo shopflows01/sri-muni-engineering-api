@@ -78,7 +78,7 @@ public class StockService
         {
             Id = Guid.NewGuid(),
             DcItemId = dcItemId,
-            TransactionDate = request.TransactionDate,
+            TransactionDate = request.TransactionDate == default ? DateTime.Now : request.TransactionDate,
             TransactionType = request.TransactionType,
             Quantity = request.Quantity,
             ReferenceNo = request.ReferenceNo,

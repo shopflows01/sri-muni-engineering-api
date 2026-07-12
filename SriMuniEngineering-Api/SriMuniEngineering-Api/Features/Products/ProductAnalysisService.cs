@@ -189,6 +189,17 @@ public class ProductAnalysisService
         var startDate = fromDate ?? new DateTime(today.Year, today.Month, 1);
         var endDate = toDate ?? new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
 
+        // Opening Balance calculation
+        var openingInward = dcItems
+            .Where(i => i.JobWorkDC.DcDate.Date < startDate.Date)
+            .Sum(i => i.Transactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Inward).Sum(t => t.Quantity));
+            
+        var openingOutward = invoiceItems
+            .Where(ii => ii.Invoice.Date.Date < startDate.Date)
+            .Sum(ii => ii.Quantity);
+            
+        var openingBalance = openingInward - openingOutward;
+
         // Filter by date
         var filteredDcs = dcItems
             .Where(i => i.JobWorkDC.DcDate.Date >= startDate.Date && i.JobWorkDC.DcDate.Date <= endDate.Date)
@@ -211,10 +222,10 @@ public class ProductAnalysisService
             .OrderBy(x => x.Date)
             .ToList();
 
-        // Totals
+        // Totals for current period + opening balance for final calculation
         var totalInward = filteredDcs.Sum(d => d.Qty);
         var totalOutward = filteredInvoices.Sum(i => i.Qty);
-        var balance = totalInward - totalOutward;
+        var balance = openingBalance + totalInward - totalOutward;
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Ledger");
@@ -267,6 +278,18 @@ public class ProductAnalysisService
         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
         int currentRow = 7;
+
+        if (openingBalance > 0)
+        {
+            var opRange = ws.Range($"A{currentRow}:H{currentRow}");
+            opRange.Merge();
+            opRange.Value = $"Opening Balance (Carry Forward): {openingBalance}";
+            opRange.Style.Font.Bold = true;
+            opRange.Style.Font.Italic = true;
+            opRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            opRange.Style.Fill.BackgroundColor = XLColor.WhiteSmoke;
+            currentRow++;
+        }
 
         for (var date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
         {

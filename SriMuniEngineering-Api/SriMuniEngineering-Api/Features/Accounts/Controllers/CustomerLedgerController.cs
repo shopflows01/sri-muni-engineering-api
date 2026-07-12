@@ -61,4 +61,19 @@ public class CustomerLedgerController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+    [HttpGet("{customerId}/export-excel")]
+    public async Task<IActionResult> ExportExcel(Guid customerId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+    {
+        try
+        {
+            var content = await _ledgerService.GenerateExcelLedgerAsync(customerId, fromDate, toDate);
+            var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            var fileName = $"SalesRegister_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+            return File(content, contentType, fileName);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }
