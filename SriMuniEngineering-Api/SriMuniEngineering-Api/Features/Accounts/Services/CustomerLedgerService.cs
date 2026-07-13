@@ -262,6 +262,24 @@ public class CustomerLedgerService : ICustomerLedgerService
             currentRow++;
         }
 
+        // Fill remaining rows up to 40 to make the report look complete
+        while (slNo <= 40)
+        {
+            ws.Cell(currentRow, 1).Value = slNo++;
+            ws.Cell(currentRow, 2).Value = "-";
+            ws.Cell(currentRow, 3).Value = "-";
+            ws.Cell(currentRow, 4).Value = "-";
+            ws.Cell(currentRow, 5).Value = "-";
+            ws.Cell(currentRow, 6).Value = "-";
+            ws.Cell(currentRow, 7).Value = "-";
+            
+            
+            // Align center for empty cells for better appearance
+            ws.Range(currentRow, 2, currentRow, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            
+            currentRow++;
+        }
+
         // Totals Row
         ws.Cell(currentRow, 3).Value = "Total:";
         ws.Cell(currentRow, 3).Style.Font.Bold = true;
