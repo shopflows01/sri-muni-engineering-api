@@ -87,6 +87,7 @@ builder.Services.AddScoped<QuotationService>();
 builder.Services.AddScoped<InvoiceService>();
 builder.Services.AddScoped<InspectionReportService>();
 builder.Services.AddScoped<EWayBillService>();
+builder.Services.AddScoped<SriMuniEngineering_Api.Features.DeliveryChallans.DeliveryChallanService>();
 
 // ─── Accounts Services ────────────────────────────────────────────
 builder.Services.AddScoped<AccountPostingService>();

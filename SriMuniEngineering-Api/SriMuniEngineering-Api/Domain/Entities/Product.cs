@@ -19,4 +19,5 @@ public class Product
     public ICollection<Quotation> Quotations { get; set; } = [];
     public ICollection<InvoiceItem> InvoiceItems { get; set; } = [];
     public ICollection<InspectionReport> InspectionReports { get; set; } = [];
+    public ICollection<DeliveryChallanItem> DeliveryChallanItems { get; set; } = [];
 }

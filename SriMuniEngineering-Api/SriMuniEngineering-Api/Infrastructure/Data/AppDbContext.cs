@@ -23,6 +23,9 @@ public class AppDbContext : DbContext
     public DbSet<Voucher> Vouchers => Set<Voucher>();
     public DbSet<VoucherEntry> VoucherEntries => Set<VoucherEntry>();
     public DbSet<VoucherAllocation> VoucherAllocations => Set<VoucherAllocation>();
+    
+    public DbSet<DeliveryChallan> DeliveryChallans => Set<DeliveryChallan>();
+    public DbSet<DeliveryChallanItem> DeliveryChallanItems => Set<DeliveryChallanItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -295,6 +298,40 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.Invoice)
                 .WithMany()
                 .HasForeignKey(e => e.InvoiceId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── DeliveryChallan ───────────────────────────────
+        modelBuilder.Entity<DeliveryChallan>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.DcNo).IsUnique();
+            entity.Property(e => e.DcNo).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.YourDcNo).HasMaxLength(100);
+            entity.Property(e => e.PoNo).HasMaxLength(100);
+            entity.Property(e => e.Remarks).HasMaxLength(500);
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+
+            entity.HasOne(e => e.Customer)
+                .WithMany(c => c.DeliveryChallans)
+                .HasForeignKey(e => e.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── DeliveryChallanItem ───────────────────────────
+        modelBuilder.Entity<DeliveryChallanItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Remarks).HasMaxLength(500);
+
+            entity.HasOne(e => e.DeliveryChallan)
+                .WithMany(d => d.Items)
+                .HasForeignKey(e => e.DeliveryChallanId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.DeliveryChallanItems)
+                .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

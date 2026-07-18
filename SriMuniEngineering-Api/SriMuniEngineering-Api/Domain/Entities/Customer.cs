@@ -22,4 +22,5 @@ public class Customer
     public ICollection<Invoice> Invoices { get; set; } = [];
     public ICollection<InspectionReport> InspectionReports { get; set; } = [];
     public CustomerLedger? Ledger { get; set; }
+    public ICollection<DeliveryChallan> DeliveryChallans { get; set; } = [];
 }
