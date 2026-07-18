@@ -81,7 +81,7 @@ public static class DeliveryChallanPdfGenerator
             });
 
             // Table Header
-            column.Item().ExtendVertical().Table(table =>
+            column.Item().Table(table =>
             {
                 table.ColumnsDefinition(columns =>
                 {
