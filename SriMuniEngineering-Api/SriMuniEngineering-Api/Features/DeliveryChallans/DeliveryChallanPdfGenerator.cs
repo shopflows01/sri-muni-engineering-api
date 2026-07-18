@@ -119,7 +119,7 @@ public static class DeliveryChallanPdfGenerator
             column.Item().Row(row =>
             {
                 row.ConstantItem(40).BorderRight(1).Padding(3).AlignCenter().Text(slNo.ToString()).FontSize(9);
-                row.RelativeItem().BorderRight(1).Padding(3).Text($"{item.Product.PartName}").FontSize(10);
+                row.RelativeItem().BorderRight(1).Padding(3).Text($"{item.Product.PartName} - ({item.Product.PartNo})").Bold().FontSize(11);
                 row.ConstantItem(80).BorderRight(1).Padding(3).Column(c => {
                     c.Item().AlignCenter().Text(item.Quantity.ToString()).FontSize(10);
                     c.Item().PaddingHorizontal(8).LineHorizontal(1);
