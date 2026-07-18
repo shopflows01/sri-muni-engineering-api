@@ -116,10 +116,10 @@ public static class DeliveryChallanPdfGenerator
                 }
 
                 // Fill remaining empty space dynamically
-                table.Cell().BorderRight(1).ExtendVertical().Text("");
-                table.Cell().BorderRight(1).ExtendVertical().Text("");
-                table.Cell().BorderRight(1).ExtendVertical().Text("");
-                table.Cell().ExtendVertical().Text("");
+                table.Cell().BorderRight(1).MinHeight(200).Text("");
+                table.Cell().BorderRight(1).MinHeight(200).Text("");
+                table.Cell().BorderRight(1).MinHeight(200).Text("");
+                table.Cell().MinHeight(200).Text("");
             });
 
             // Footer
@@ -129,7 +129,7 @@ public static class DeliveryChallanPdfGenerator
                 row.RelativeItem().AlignRight().Text($"For {company["Name"]}").Bold().FontSize(10);
             });
 
-            column.Item().Padding(5).PaddingTop(50).Row(row =>
+            column.Item().Padding(5).PaddingTop(25).Row(row =>
             {
                 row.RelativeItem().Text("Receiver's Signature").FontSize(10);
                 row.RelativeItem().AlignRight().Text("Authorised Signatory").FontSize(10);

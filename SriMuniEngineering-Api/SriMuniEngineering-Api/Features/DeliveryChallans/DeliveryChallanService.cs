@@ -96,7 +96,7 @@ public class DeliveryChallanService
         // Add new items
         foreach (var item in request.Items)
         {
-            dc.Items.Add(new DeliveryChallanItem
+            _context.DeliveryChallanItems.Add(new DeliveryChallanItem
             {
                 Id = Guid.NewGuid(),
                 DeliveryChallanId = dc.Id,
