@@ -64,6 +64,8 @@ public class ProductService
             .Include(p => p.JobWorkDCItems)
                 .ThenInclude(i => i.JobWorkDC)
                     .ThenInclude(d => d.Customer)
+            .Include(p => p.JobWorkDCItems)
+                .ThenInclude(i => i.Transactions)
             .FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new KeyNotFoundException($"Product with ID {id} not found.");
 
@@ -76,6 +78,8 @@ public class ProductService
             .Include(p => p.JobWorkDCItems)
                 .ThenInclude(i => i.JobWorkDC)
                     .ThenInclude(d => d.Customer)
+            .Include(p => p.JobWorkDCItems)
+                .ThenInclude(i => i.Transactions)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filter.Search))
@@ -118,22 +122,31 @@ public class ProductService
         await _context.SaveChangesAsync();
     }
 
-    private static ProductResponse MapToResponse(Product p) => new()
+    private static ProductResponse MapToResponse(Product p)
     {
-        Id = p.Id,
-        PartNo = p.PartNo,
-        PartName = p.PartName,
-        PartDescription = p.PartDescription,
-        BasePricePerUnit = p.BasePricePerUnit,
-        RatePerItem = p.RatePerItem,
-        GstPercent = p.GstPercent,
-        HsnSac = p.HsnSac,
-        Unit = p.Unit,
-        IsDeleted = p.IsDeleted,
-        DeletedAt = p.DeletedAt,
-        Customers = (p.JobWorkDCItems ?? [])
-            .Select(i => new ProductCustomerDto { CustomerId = i.JobWorkDC.CustomerId, CustomerName = i.JobWorkDC.Customer.Name })
-            .DistinctBy(c => c.CustomerId)
-            .ToList()
-    };
+        var allTransactions = p.JobWorkDCItems?.SelectMany(i => i.Transactions ?? []) ?? [];
+        var totalInward = allTransactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Inward).Sum(t => t.Quantity);
+        var totalOutward = allTransactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Outward).Sum(t => t.Quantity);
+        var totalRejected = allTransactions.Where(t => t.TransactionType == Domain.Enums.TransactionType.Rejected).Sum(t => t.Quantity);
+
+        return new ProductResponse
+        {
+            Id = p.Id,
+            PartNo = p.PartNo,
+            PartName = p.PartName,
+            PartDescription = p.PartDescription,
+            BasePricePerUnit = p.BasePricePerUnit,
+            RatePerItem = p.RatePerItem,
+            GstPercent = p.GstPercent,
+            HsnSac = p.HsnSac,
+            Unit = p.Unit,
+            OpenStock = totalInward - totalOutward - totalRejected,
+            IsDeleted = p.IsDeleted,
+            DeletedAt = p.DeletedAt,
+            Customers = (p.JobWorkDCItems ?? [])
+                .Select(i => new ProductCustomerDto { CustomerId = i.JobWorkDC.CustomerId, CustomerName = i.JobWorkDC.Customer.Name })
+                .DistinctBy(c => c.CustomerId)
+                .ToList()
+        };
+    }
 }

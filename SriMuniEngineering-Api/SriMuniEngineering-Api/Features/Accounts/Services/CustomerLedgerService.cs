@@ -16,6 +16,7 @@ public interface ICustomerLedgerService
     Task<decimal> GetAdvanceBalanceAsync(Guid customerId);
     Task<CustomerLedgerDto> CreateLedgerAsync(Guid customerId, CreateCustomerLedgerRequest request);
     Task<byte[]> GenerateExcelLedgerAsync(Guid customerId, DateTime? fromDate, DateTime? toDate);
+    Task<byte[]> GenerateTransactionStatementAsync(Guid customerId, DateTime? fromDate, DateTime? toDate);
 }
 
 public class CustomerLedgerService : ICustomerLedgerService
@@ -309,5 +310,182 @@ public class CustomerLedgerService : ICustomerLedgerService
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return stream.ToArray();
+    }
+
+    public async Task<byte[]> GenerateTransactionStatementAsync(Guid customerId, DateTime? fromDate, DateTime? toDate)
+    {
+        var customer = await _context.Customers.FindAsync(customerId)
+            ?? throw new KeyNotFoundException($"Customer not found.");
+
+        var ledger = await _context.CustomerLedgers
+            .Include(l => l.VoucherEntries)
+                .ThenInclude(ve => ve.Voucher)
+            .FirstOrDefaultAsync(l => l.CustomerId == customerId)
+            ?? throw new InvalidOperationException("Customer ledger not found.");
+
+        var today = DateTime.Today;
+        var startDate = fromDate ?? new DateTime(today.Year, today.Month, 1);
+        var endDate = toDate ?? new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+
+        // Calculate Opening Balance
+        decimal openingBalance = ledger.OpeningBalanceType == BalanceType.Debit ? ledger.OpeningBalance : -ledger.OpeningBalance;
+        var priorEntries = ledger.VoucherEntries.Where(e => e.Voucher.VoucherDate.Date < startDate.Date).ToList();
+        openingBalance += priorEntries.Sum(e => e.DebitAmount) - priorEntries.Sum(e => e.CreditAmount);
+
+        // Current Period Entries
+        var periodEntries = ledger.VoucherEntries
+            .Where(e => e.Voucher.VoucherDate.Date >= startDate.Date && e.Voucher.VoucherDate.Date <= endDate.Date)
+            .OrderBy(e => e.Voucher.VoucherDate)
+            .ThenBy(e => e.CreatedDate)
+            .ToList();
+
+        var debits = periodEntries.Where(e => e.DebitAmount > 0).ToList();
+        var credits = periodEntries.Where(e => e.CreditAmount > 0).ToList();
+        var maxRows = Math.Max(debits.Count, credits.Count);
+
+        decimal totalDebit = debits.Sum(d => d.DebitAmount);
+        decimal totalCredit = credits.Sum(c => c.CreditAmount);
+        decimal closingBalance = openingBalance + totalDebit - totalCredit;
+        
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("Transaction Statement");
+
+        // Title
+        var titleRange = ws.Range("A1:H4");
+        titleRange.Merge();
+        var richText = ws.Cell("A1").GetRichText();
+        richText.ClearText();
+        richText.AddText("From: ").SetFontName("Calibri").SetFontSize(11).SetFontColor(XLColor.Black).SetBold(false);
+        richText.AddText("SRI VALLI INDUSTRIES").SetFontName("Calibri").SetFontSize(14).SetFontColor(XLColor.Purple).SetBold(true);
+        richText.AddText(Environment.NewLine + "To: ").SetFontName("Calibri").SetFontSize(11).SetFontColor(XLColor.Black).SetBold(false);
+        richText.AddText(customer.Name.ToUpper()).SetFontName("Calibri").SetFontSize(14).SetFontColor(XLColor.Purple).SetBold(true);
+        
+        ws.Cell("A1").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        ws.Cell("A1").Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        ws.Cell("A1").Style.Alignment.WrapText = true;
+
+        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "frontend", "public", "assets", "excel-logo.png");
+        if (System.IO.File.Exists(logoPath))
+        {
+            var picture = ws.AddPicture(logoPath);
+            picture.MoveTo(ws.Cell("A1"));
+            picture.Scale(0.8);
+        }
+
+        int currentRow = 5;
+
+        // Opening Balance
+        var opBalanceRange = ws.Range(currentRow, 1, currentRow, 8);
+        opBalanceRange.Merge();
+        string obText = openingBalance >= 0 ? $"Opening Balance: {openingBalance:N2} Dr" : $"Opening Balance: {Math.Abs(openingBalance):N2} Cr";
+        opBalanceRange.Value = obText;
+        opBalanceRange.Style.Font.Bold = true;
+        opBalanceRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        currentRow++;
+
+        // Transaction Period
+        var periodRange = ws.Range(currentRow, 1, currentRow, 8);
+        periodRange.Merge();
+        periodRange.Value = $"Transaction between {startDate:dd-MMM-yyyy} to {endDate:dd-MMM-yyyy}";
+        periodRange.Style.Font.Bold = true;
+        periodRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        currentRow++;
+
+        // Headers
+        ws.Cell(currentRow, 1).Value = "Date";
+        ws.Cell(currentRow, 2).Value = "No";
+        ws.Cell(currentRow, 3).Value = "Amount";
+        ws.Cell(currentRow, 4).Value = ""; // Gap
+        ws.Cell(currentRow, 5).Value = "Date";
+        ws.Cell(currentRow, 6).Value = "No";
+        ws.Cell(currentRow, 7).Value = "Amount";
+        ws.Cell(currentRow, 8).Value = "Remarks";
+
+        var headerRange = ws.Range(currentRow, 1, currentRow, 8);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+        headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        currentRow++;
+
+        // Data Rows
+        for (int i = 0; i < maxRows; i++)
+        {
+            // Debit side
+            if (i < debits.Count)
+            {
+                var d = debits[i];
+                ws.Cell(currentRow, 1).Value = d.Voucher.VoucherDate.ToString("dd-MMM-yyyy");
+                ws.Cell(currentRow, 2).Value = d.Voucher.VoucherNumber;
+                ws.Cell(currentRow, 3).Value = d.DebitAmount;
+            }
+            else
+            {
+                ws.Cell(currentRow, 1).Value = "-";
+                ws.Cell(currentRow, 2).Value = "-";
+                ws.Cell(currentRow, 3).Value = 0;
+            }
+
+            ws.Cell(currentRow, 4).Value = ""; // Gap
+
+            // Credit side
+            if (i < credits.Count)
+            {
+                var c = credits[i];
+                ws.Cell(currentRow, 5).Value = c.Voucher.VoucherDate.ToString("dd-MMM-yyyy");
+                ws.Cell(currentRow, 6).Value = c.Voucher.VoucherNumber;
+                ws.Cell(currentRow, 7).Value = c.CreditAmount;
+                ws.Cell(currentRow, 8).Value = c.Remarks ?? c.Voucher.Narration;
+            }
+            else
+            {
+                ws.Cell(currentRow, 5).Value = "-";
+                ws.Cell(currentRow, 6).Value = "-";
+                ws.Cell(currentRow, 7).Value = 0;
+                ws.Cell(currentRow, 8).Value = "";
+            }
+
+            currentRow++;
+        }
+
+        // Totals
+        ws.Cell(currentRow, 2).Value = "Total:";
+        ws.Cell(currentRow, 2).Style.Font.Bold = true;
+        ws.Cell(currentRow, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+        ws.Cell(currentRow, 3).Value = totalDebit;
+        ws.Cell(currentRow, 3).Style.Font.Bold = true;
+
+        ws.Cell(currentRow, 6).Value = "Total:";
+        ws.Cell(currentRow, 6).Style.Font.Bold = true;
+        ws.Cell(currentRow, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+        ws.Cell(currentRow, 7).Value = totalCredit;
+        ws.Cell(currentRow, 7).Style.Font.Bold = true;
+        currentRow++;
+
+        // Closing Balance / Pending Amount
+        var closingRange = ws.Range(currentRow, 1, currentRow, 8);
+        closingRange.Merge();
+        string cbText = closingBalance >= 0 ? $"Pending Amount (Dr): {closingBalance:N2}" : $"Advance Amount (Cr): {Math.Abs(closingBalance):N2}";
+        closingRange.Value = cbText;
+        closingRange.Style.Font.Bold = true;
+        closingRange.Style.Font.FontColor = closingBalance >= 0 ? XLColor.Red : XLColor.Green;
+        closingRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        currentRow++;
+
+        // Formatting
+        var dataRange = ws.Range($"A1:H{currentRow - 1}");
+        dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+        ws.Columns(1, 3).AdjustToContents();
+        ws.Column(4).Width = 8;
+        ws.Columns(5, 7).AdjustToContents();
+        ws.Column(8).Width = 20;
+
+        ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
+        ws.PageSetup.FitToPages(1, 0);
+
+        using var outStream = new MemoryStream();
+        workbook.SaveAs(outStream);
+        return outStream.ToArray();
     }
 }

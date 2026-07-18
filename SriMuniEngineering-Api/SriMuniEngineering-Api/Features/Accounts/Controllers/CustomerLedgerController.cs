@@ -61,17 +61,34 @@ public class CustomerLedgerController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
-    [HttpGet("{customerId}/export-excel")]
-    public async Task<IActionResult> ExportExcel(Guid customerId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+
+    [HttpGet("{id:guid}/export")]
+    public async Task<IActionResult> ExportLedger(Guid id, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
     {
         try
         {
-            var content = await _ledgerService.GenerateExcelLedgerAsync(customerId, fromDate, toDate);
-            var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var fileName = $"SalesRegister_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-            return File(content, contentType, fileName);
+            var fileContent = await _ledgerService.GenerateExcelLedgerAsync(id, fromDate, toDate);
+            return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"SalesRegister.xlsx");
         }
         catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("{id:guid}/transaction-statement")]
+    public async Task<IActionResult> ExportTransactionStatement(Guid id, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+    {
+        try
+        {
+            var fileContent = await _ledgerService.GenerateTransactionStatementAsync(id, fromDate, toDate);
+            return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"TransactionStatement.xlsx");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
         {
             return NotFound(new { message = ex.Message });
         }

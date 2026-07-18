@@ -48,6 +48,7 @@ public class ProductResponse
     public decimal GstPercent { get; set; }
     public string HsnSac { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
+    public decimal OpenStock { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     public List<ProductCustomerDto> Customers { get; set; } = [];
