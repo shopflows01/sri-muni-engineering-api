@@ -6,6 +6,7 @@ public class DeliveryChallanItem
     public Guid DeliveryChallanId { get; set; }
     public Guid ProductId { get; set; }
     public int Quantity { get; set; }
+    public string? Unit { get; set; }
     public string? Remarks { get; set; }
 
     public DeliveryChallan DeliveryChallan { get; set; } = null!;

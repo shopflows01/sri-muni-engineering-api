@@ -64,6 +64,7 @@ public class DeliveryChallanService
                 DeliveryChallanId = dc.Id,
                 ProductId = item.ProductId,
                 Quantity = item.Quantity,
+                Unit = item.Unit,
                 Remarks = item.Remarks
             });
         }
@@ -101,6 +102,7 @@ public class DeliveryChallanService
                 DeliveryChallanId = dc.Id,
                 ProductId = item.ProductId,
                 Quantity = item.Quantity,
+                Unit = item.Unit,
                 Remarks = item.Remarks
             });
         }
@@ -167,6 +169,7 @@ public class DeliveryChallanService
                 PartNo: i.Product?.PartNo ?? "",
                 PartName: i.Product?.PartName ?? "",
                 Quantity: i.Quantity,
+                Unit: i.Unit,
                 Remarks: i.Remarks
             )).ToList()
         );

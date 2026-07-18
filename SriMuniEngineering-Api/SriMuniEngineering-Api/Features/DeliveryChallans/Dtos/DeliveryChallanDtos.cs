@@ -19,6 +19,7 @@ public record DeliveryChallanItemResponse(
     string PartNo,
     string PartName,
     int Quantity,
+    string? Unit,
     string? Remarks
 );
 
@@ -35,5 +36,6 @@ public record CreateDeliveryChallanRequest(
 public record CreateDeliveryChallanItemRequest(
     Guid ProductId,
     int Quantity,
+    string? Unit,
     string? Remarks
 );

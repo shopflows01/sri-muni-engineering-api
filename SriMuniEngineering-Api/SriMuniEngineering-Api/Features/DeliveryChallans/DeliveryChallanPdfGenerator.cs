@@ -108,7 +108,7 @@ public static class DeliveryChallanPdfGenerator
                     table.Cell().BorderRight(1).Padding(5).Column(c => {
                         c.Item().AlignCenter().Text(item.Quantity.ToString()).FontSize(12);
                         c.Item().PaddingHorizontal(10).LineHorizontal(1);
-                        c.Item().AlignCenter().Text(item.Product.Unit).FontSize(11);
+                        c.Item().AlignCenter().Text(item.Unit ?? item.Product.Unit).FontSize(11);
                     });
                     table.Cell().Padding(5).AlignCenter().Text(item.Remarks ?? "").FontSize(11);
 
