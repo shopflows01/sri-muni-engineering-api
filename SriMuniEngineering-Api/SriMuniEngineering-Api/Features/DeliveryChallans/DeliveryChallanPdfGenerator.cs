@@ -116,10 +116,10 @@ public static class DeliveryChallanPdfGenerator
                 }
 
                 // Fill remaining empty space dynamically
-                table.Cell().BorderRight(1).ExtendVertical().Text("");
-                table.Cell().BorderRight(1).ExtendVertical().Text("");
-                table.Cell().BorderRight(1).ExtendVertical().Text("");
-                table.Cell().ExtendVertical().Text("");
+                table.Cell().BorderRight(1).MinHeight(20).Text("");
+                table.Cell().BorderRight(1).MinHeight(20).Text("");
+                table.Cell().BorderRight(1).MinHeight(20).Text("");
+                table.Cell().MinHeight(20).Text("");
 
                 // Footer inside table
                 table.Cell().ColumnSpan(4).BorderTop(1).Padding(5).Column(col =>

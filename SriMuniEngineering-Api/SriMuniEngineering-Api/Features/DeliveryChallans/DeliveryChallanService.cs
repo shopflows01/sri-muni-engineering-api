@@ -56,15 +56,20 @@ public class DeliveryChallanService
             CreatedDate = DateTime.UtcNow
         };
 
+        var productIds = request.Items.Select(i => i.ProductId).Distinct().ToList();
+        var products = await _context.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.Unit);
+
         foreach (var item in request.Items)
         {
+            var unit = string.IsNullOrWhiteSpace(item.Unit) ? products.GetValueOrDefault(item.ProductId) : item.Unit;
+
             dc.Items.Add(new DeliveryChallanItem
             {
                 Id = Guid.NewGuid(),
                 DeliveryChallanId = dc.Id,
                 ProductId = item.ProductId,
                 Quantity = item.Quantity,
-                Unit = string.IsNullOrWhiteSpace(item.Unit) ? null : item.Unit,
+                Unit = unit,
                 Remarks = item.Remarks
             });
         }
@@ -93,16 +98,21 @@ public class DeliveryChallanService
         // Remove existing items
         _context.DeliveryChallanItems.RemoveRange(dc.Items);
 
+        var productIds = request.Items.Select(i => i.ProductId).Distinct().ToList();
+        var products = await _context.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.Unit);
+
         // Add new items
         foreach (var item in request.Items)
         {
+            var unit = string.IsNullOrWhiteSpace(item.Unit) ? products.GetValueOrDefault(item.ProductId) : item.Unit;
+
             _context.DeliveryChallanItems.Add(new DeliveryChallanItem
             {
                 Id = Guid.NewGuid(),
                 DeliveryChallanId = dc.Id,
                 ProductId = item.ProductId,
                 Quantity = item.Quantity,
-                Unit = string.IsNullOrWhiteSpace(item.Unit) ? null : item.Unit,
+                Unit = unit,
                 Remarks = item.Remarks
             });
         }
