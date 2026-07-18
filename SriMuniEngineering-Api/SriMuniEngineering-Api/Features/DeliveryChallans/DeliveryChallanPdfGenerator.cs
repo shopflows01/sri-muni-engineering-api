@@ -48,6 +48,8 @@ public static class DeliveryChallanPdfGenerator
                     col.Item().AlignCenter().Text($"Cell : {company["Phone"]}, {company["AltPhone"]}").Bold().FontSize(11).FontColor(Colors.Grey.Darken3);
                     col.Item().AlignCenter().Text($"GSTIN : {company["Gstin"]}").Bold().FontSize(11).FontColor(Colors.Grey.Darken3);
                 });
+
+                row.ConstantItem(120); // Empty right column to perfectly center the middle content
             });
 
             // Customer and Document Details Section
@@ -65,13 +67,13 @@ public static class DeliveryChallanPdfGenerator
                 row.RelativeItem().BorderLeft(1).Column(col =>
                 {
                     col.Item().BorderBottom(1).Padding(5).Row(r => {
-                        r.RelativeItem().Text($"D.C No.: ").FontSize(10);
-                        r.RelativeItem().Text(dc.DcNo).Bold().FontSize(12).FontColor(Colors.Red.Medium);
-                        r.RelativeItem().AlignRight().Text($"Date: {dc.DcDate:dd/MM/yyyy}").FontSize(10);
+                        r.ConstantItem(60).Text("D.C No.:").FontSize(10);
+                        r.RelativeItem().AlignCenter().Text(dc.DcNo).Bold().FontSize(12).FontColor(Colors.Red.Medium);
+                        r.AutoItem().Text($"Date: {dc.DcDate:dd/MM/yyyy}").FontSize(10);
                     });
                     col.Item().BorderBottom(1).Padding(5).Row(r => {
                         r.RelativeItem().Text($"Your D.C. No.    {dc.YourDcNo ?? ""}").FontSize(10);
-                        r.RelativeItem().AlignRight().Text($"Date : {dc.YourDcDate?.ToString("dd/MM/yyyy") ?? ""}").FontSize(10);
+                        r.AutoItem().Text($"Date : {dc.YourDcDate?.ToString("dd/MM/yyyy") ?? ""}").FontSize(10);
                     });
                     col.Item().BorderBottom(1).Padding(5).Text($"P.O.No. Cide No.    {dc.PoNo ?? ""}").FontSize(10);
                     col.Item().Padding(5).Text($"GST No.    {dc.Customer.GSTIN}").FontSize(10);
@@ -79,7 +81,7 @@ public static class DeliveryChallanPdfGenerator
             });
 
             // Table Header
-            column.Item().Table(table =>
+            column.Item().ExtendVertical().Table(table =>
             {
                 table.ColumnsDefinition(columns =>
                 {
@@ -113,14 +115,11 @@ public static class DeliveryChallanPdfGenerator
                     slNo++;
                 }
 
-                // Fill remaining empty space
-                for (int i = 0; i < 5; i++)
-                {
-                    table.Cell().BorderRight(1).Padding(10).Text("");
-                    table.Cell().BorderRight(1).Padding(10).Text("");
-                    table.Cell().BorderRight(1).Padding(10).Text("");
-                    table.Cell().Padding(10).Text("");
-                }
+                // Fill remaining empty space dynamically
+                table.Cell().BorderRight(1).ExtendVertical().Text("");
+                table.Cell().BorderRight(1).ExtendVertical().Text("");
+                table.Cell().BorderRight(1).ExtendVertical().Text("");
+                table.Cell().ExtendVertical().Text("");
             });
 
             // Footer
