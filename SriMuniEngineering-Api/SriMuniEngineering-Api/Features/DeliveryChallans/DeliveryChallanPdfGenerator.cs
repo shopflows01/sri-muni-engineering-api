@@ -108,7 +108,7 @@ public static class DeliveryChallanPdfGenerator
                     table.Cell().BorderRight(1).Padding(5).Column(c => {
                         c.Item().AlignCenter().Text(item.Quantity.ToString()).FontSize(12);
                         c.Item().PaddingHorizontal(10).LineHorizontal(1);
-                        c.Item().AlignCenter().Text(item.Unit ?? item.Product.Unit).FontSize(11);
+                        c.Item().AlignCenter().Text(string.IsNullOrWhiteSpace(item.Unit) ? item.Product.Unit : item.Unit).FontSize(11);
                     });
                     table.Cell().Padding(5).AlignCenter().Text(item.Remarks ?? "").FontSize(11);
 
@@ -116,23 +116,26 @@ public static class DeliveryChallanPdfGenerator
                 }
 
                 // Fill remaining empty space dynamically
-                table.Cell().BorderRight(1).MinHeight(200).Text("");
-                table.Cell().BorderRight(1).MinHeight(200).Text("");
-                table.Cell().BorderRight(1).MinHeight(200).Text("");
-                table.Cell().MinHeight(200).Text("");
-            });
+                table.Cell().BorderRight(1).ExtendVertical().Text("");
+                table.Cell().BorderRight(1).ExtendVertical().Text("");
+                table.Cell().BorderRight(1).ExtendVertical().Text("");
+                table.Cell().ExtendVertical().Text("");
 
-            // Footer
-            column.Item().BorderTop(1).Padding(5).Row(row =>
-            {
-                row.RelativeItem().Text("Received the above goods in good order & Condition.").FontSize(9);
-                row.RelativeItem().AlignRight().Text($"For {company["Name"]}").Bold().FontSize(10);
-            });
+                // Footer inside table
+                table.Cell().ColumnSpan(4).BorderTop(1).Padding(5).Column(col =>
+                {
+                    col.Item().Row(row =>
+                    {
+                        row.RelativeItem().Text("Received the above goods in good order & Condition.").FontSize(9);
+                        row.RelativeItem().AlignRight().Text($"For {company["Name"]}").Bold().FontSize(10);
+                    });
 
-            column.Item().Padding(5).PaddingTop(25).Row(row =>
-            {
-                row.RelativeItem().Text("Receiver's Signature").FontSize(10);
-                row.RelativeItem().AlignRight().Text("Authorised Signatory").FontSize(10);
+                    col.Item().PaddingTop(25).Row(row =>
+                    {
+                        row.RelativeItem().Text("Receiver's Signature").FontSize(10);
+                        row.RelativeItem().AlignRight().Text("Authorised Signatory").FontSize(10);
+                    });
+                });
             });
         });
     }
